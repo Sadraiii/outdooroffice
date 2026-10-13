@@ -1,0 +1,10 @@
+name = "outdoor-office"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+
+[vars]
+PROJECT_ID = "outdoor-office"
+APP_URL = "https://outdoor-office.web.app"
+
+[triggers]
+crons = ["*/5 * * * *", "7 * * * *"]

@@ -1,0 +1,428 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function me() { return request.auth.uid; }
+    function isAdmin() {
+      return signedIn() && get(/databases/$(database)/documents/users/$(me())).data.role == 'admin';
+    }
+    function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
+    function str(v, max) { return v is string && v.size() <= max; }
+    function optStr(d, k, max) { return !(k in d) || str(d[k], max); }
+    function okTime(t) { return t is int && t <= request.time.toMillis() + 3600000; }
+    function eventPath(eventId) { return /databases/$(database)/documents/events/$(eventId); }
+    function eventExists(eventId) { return exists(eventPath(eventId)); }
+    function eventData(eventId) { return get(eventPath(eventId)).data; }
+    function step(was, now) { return now is int && now >= 0 && (now == was + 1 || now == was - 1); }
+    function okImage(v, max) { return v == null || str(v, max); }
+
+    function okRep(r) {
+      return r.keys().hasOnly(['name', 'count']) && r.name is string && r.name.size() <= 40 && r.count is number;
+    }
+    function okReps(l) {
+      return l is list && l.size() <= 10
+        && (l.size() < 1 || okRep(l[0])) && (l.size() < 2 || okRep(l[1])) && (l.size() < 3 || okRep(l[2]))
+        && (l.size() < 4 || okRep(l[3])) && (l.size() < 5 || okRep(l[4])) && (l.size() < 6 || okRep(l[5]))
+        && (l.size() < 7 || okRep(l[6])) && (l.size() < 8 || okRep(l[7])) && (l.size() < 9 || okRep(l[8]))
+        && (l.size() < 10 || okRep(l[9]));
+    }
+    function okEx(x) {
+      return x.size() == 4 && x.id.matches('[A-Za-z0-9_-]{1,40}') && x.name.matches('.{1,40}')
+        && x.target is number && x.target > 0 && x.unit.matches('reps|sek|min|km|m');
+    }
+    function okExercises(l) {
+      return l is list && l.size() <= 8
+        && (l.size() < 1 || okEx(l[0])) && (l.size() < 2 || okEx(l[1])) && (l.size() < 3 || okEx(l[2]))
+        && (l.size() < 4 || okEx(l[3])) && (l.size() < 5 || okEx(l[4])) && (l.size() < 6 || okEx(l[5]))
+        && (l.size() < 7 || okEx(l[6])) && (l.size() < 8 || okEx(l[7]));
+    }
+    function okNums(l) {
+      return (l.size() < 1 || l[0] is number) && (l.size() < 2 || l[1] is number) && (l.size() < 3 || l[2] is number)
+        && (l.size() < 4 || l[3] is number) && (l.size() < 5 || l[4] is number) && (l.size() < 6 || l[5] is number)
+        && (l.size() < 7 || l[6] is number) && (l.size() < 8 || l[7] is number);
+    }
+    function okCounts(m) { return m is map && m.size() <= 8 && okNums(m.values()); }
+
+    function okNotify(n) {
+      return n is map && n.keys().hasOnly(['activity', 'rsvp', 'follows', 'social', 'official', 'community', 'reminders'])
+        && n.values().hasOnly([true, false]);
+    }
+    function okProfile(d) {
+      return str(d.name, 40) && d.name.size() > 0
+        && str(d.nameLower, 40)
+        && str(d.bio, 200)
+        && str(d.instagram, 30)
+        && okImage(d.photoURL, 70000)
+        && okNotify(d.notify);
+    }
+
+    function adminPath() { return /databases/$(database)/documents/config/admin; }
+    function followPath(followerId, followeeId) { return /databases/$(database)/documents/follows/$(followerId + '_' + followeeId); }
+    function followerTie(userId) {
+      let was = resource.data.get('followers', 0);
+      let now = request.resource.data.followers;
+      return (now == was + 1 && !exists(followPath(me(), userId)) && existsAfter(followPath(me(), userId)))
+        || (now == was - 1 && now >= 0 && exists(followPath(me(), userId)) && !existsAfter(followPath(me(), userId)));
+    }
+
+    match /users/{userId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && me() == userId
+        && request.resource.data.keys().hasOnly(['name', 'nameLower', 'bio', 'instagram', 'photoURL', 'role', 'createdAt', 'followers', 'following', 'notify'])
+        && (request.resource.data.role == 'member'
+            || (request.resource.data.role == 'admin' && !exists(adminPath()) && getAfter(adminPath()).data.uid == me()))
+        && request.resource.data.followers == 0
+        && request.resource.data.following == 0
+        && request.resource.data.createdAt is int
+        && okProfile(request.resource.data);
+      allow update: if signedIn() && (
+        (me() == userId
+          && changed().hasOnly(['name', 'nameLower', 'bio', 'instagram', 'photoURL', 'notify'])
+          && okProfile(request.resource.data))
+        || (me() == userId
+          && changed().hasOnly(['stats', 'badges'])
+          && request.resource.data.stats is map
+          && request.resource.data.badges is map && request.resource.data.badges.size() <= 80
+          && request.resource.data.badges.keys().hasAll(resource.data.get('badges', {}).keys()))
+        || (me() == userId && changed().hasOnly(['following']) && step(resource.data.get('following', 0), request.resource.data.following))
+        || (me() != userId && changed().hasOnly(['followers']) && followerTie(userId))
+        || (isAdmin() && changed().hasOnly(['role']) && request.resource.data.role in ['member', 'admin'])
+      );
+      allow delete: if false;
+
+      match /tokens/{tokenId} {
+        allow read, delete: if signedIn() && me() == userId;
+        allow create, update: if signedIn() && me() == userId
+          && request.resource.data.keys().hasOnly(['token', 'at', 'ua'])
+          && str(request.resource.data.token, 4096)
+          && request.resource.data.at is int
+          && optStr(request.resource.data, 'ua', 200);
+      }
+      match /private/{docId} {
+        allow read, delete: if signedIn() && me() == userId;
+        allow create, update: if signedIn() && me() == userId && docId == 'calendar'
+          && request.resource.data.keys().hasOnly(['mine', 'all'])
+          && (!('mine' in request.resource.data) || str(request.resource.data.mine, 64))
+          && (!('all' in request.resource.data) || str(request.resource.data.all, 64));
+      }
+      match /notifications/{noticeId} {
+        allow read, delete: if signedIn() && me() == userId;
+        allow update: if signedIn() && me() == userId && changed().hasOnly(['read']) && request.resource.data.read == true;
+        allow create: if signedIn()
+          && request.resource.data.keys().hasOnly(['type', 'actorId', 'title', 'body', 'link', 'at', 'read', 'push'])
+          && request.resource.data.get('push', true) == true
+          && request.resource.data.actorId == me()
+          && str(request.resource.data.type, 20)
+          && str(request.resource.data.title, 160)
+          && str(request.resource.data.body, 300)
+          && str(request.resource.data.link, 120) && request.resource.data.link.matches('/.*')
+          && request.resource.data.read == false
+          && okTime(request.resource.data.at);
+      }
+    }
+
+    match /follows/{followId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['followerId', 'followeeId', 'createdAt'])
+        && request.resource.data.followerId == me()
+        && request.resource.data.followeeId is string
+        && request.resource.data.followeeId != me()
+        && request.resource.data.createdAt is int
+        && followId == me() + '_' + request.resource.data.followeeId
+        && exists(/databases/$(database)/documents/users/$(request.resource.data.followeeId));
+      allow delete: if signedIn() && resource.data.followerId == me();
+      allow update: if false;
+    }
+
+    function okCohosts(l) {
+      return l is list && l.size() <= 5
+        && (l.size() < 1 || l[0] is string) && (l.size() < 2 || l[1] is string) && (l.size() < 3 || l[2] is string)
+        && (l.size() < 4 || l[3] is string) && (l.size() < 5 || l[4] is string);
+    }
+    function okGeo(g) {
+      return g is map && g.keys().hasOnly(['name', 'lat', 'lon']) && g.name is string && g.name.size() <= 60
+        && g.lat is number && g.lon is number;
+    }
+    function okOptInt(d, k) { return !(k in d) || d[k] == null || d[k] is int; }
+    function okEvent(d) {
+      return d.keys().hasOnly(['title', 'sport', 'official', 'createdBy', 'coachId', 'date', 'time', 'duration', 'place', 'note', 'exercises',
+                               'createdAt', 'updatedAt', 'updatedBy', 'seriesId', 'seriesIndex', 'signups',
+                               'capacity', 'signupUntil', 'photoPolicy', 'photoCount', 'cover',
+                               'cancelled', 'cancelNote', 'geo', 'checkinFrom', 'checkinUntil', 'cohosts', 'feedbackCount', 'feedbackSum'])
+        && (!('cohosts' in d) || okCohosts(d.cohosts))
+        && (!('cancelled' in d) || d.cancelled is bool)
+        && (!('cancelNote' in d) || (d.cancelNote is string && d.cancelNote.size() <= 200))
+        && (!('geo' in d) || d.geo == null || okGeo(d.geo))
+        && (!('capacity' in d) || d.capacity == null || (d.capacity is int && d.capacity >= 1 && d.capacity <= 5000))
+        && okOptInt(d, 'signupUntil') && okOptInt(d, 'checkinFrom') && okOptInt(d, 'checkinUntil')
+        && (!('photoPolicy' in d) || d.photoPolicy in ['all', 'host'])
+        && (!('cover' in d) || okImage(d.cover, 100000))
+        && (!('signups' in d) || (d.signups is map && d.signups.size() <= 5000))
+        && d.title is string && d.title.size() > 0 && d.title.size() <= 60
+        && d.sport in ['calisthenics', 'fitness', 'lob', 'cykling', 'gang', 'yoga', 'vinterbadning', 'socialt', 'andet']
+        && d.official is bool
+        && d.date is string && d.date.matches('20[2-9][0-9]-[01][0-9]-[0-3][0-9]')
+        && d.time is string && d.time.size() <= 5
+        && (!('duration' in d) || d.duration == null || (d.duration is int && d.duration >= 10 && d.duration <= 720))
+        && d.place is string && d.place.size() <= 80
+        && d.note is string && d.note.size() <= 500
+        && okExercises(d.exercises)
+        && (!('updatedAt' in d) || d.updatedAt is int)
+        && (!('seriesId' in d) || (d.seriesId is string && d.seriesId.size() <= 40))
+        && (!('seriesIndex' in d) || d.seriesIndex is int);
+    }
+
+    function isHost(e) {
+      return e.createdBy == request.auth.uid || e.get('coachId', null) == request.auth.uid || request.auth.uid in e.get('cohosts', []);
+    }
+    function mySignup() {
+      let was = resource.data.get('signups', {});
+      let now = request.resource.data.get('signups', {});
+      let d = now.diff(was);
+      return d.affectedKeys().hasOnly([me()]) && d.changedKeys().size() == 0
+        && (d.addedKeys().size() == 0
+            || (now[me()] == request.time
+                && resource.data.get('cancelled', false) == false
+                && (resource.data.get('signupUntil', null) == null || request.time.toMillis() <= resource.data.signupUntil)));
+    }
+    function photoCounter() {
+      let n = request.resource.data.get('photoCount', 0);
+      return (n == resource.data.get('photoCount', 0) || step(resource.data.get('photoCount', 0), n))
+        && (!changed().hasAny(['cover']) || isHost(resource.data) || isAdmin());
+    }
+    function feedbackPath(eventId) { return /databases/$(database)/documents/events/$(eventId)/feedback/$(request.auth.uid); }
+    function feedbackCounter(eventId) {
+      let had = exists(feedbackPath(eventId));
+      let oldR = had ? get(feedbackPath(eventId)).data.rating : 0;
+      return existsAfter(feedbackPath(eventId))
+        && request.resource.data.feedbackCount == resource.data.get('feedbackCount', 0) + (had ? 0 : 1)
+        && request.resource.data.feedbackSum == resource.data.get('feedbackSum', 0) + getAfter(feedbackPath(eventId)).data.rating - oldR;
+    }
+
+    match /events/{eventId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && okEvent(request.resource.data)
+        && request.resource.data.createdBy == me()
+        && request.resource.data.createdAt is int
+        && ((request.resource.data.official == false
+             && (!('coachId' in request.resource.data) || request.resource.data.coachId == null || request.resource.data.coachId == me()))
+            || isAdmin())
+        && request.resource.data.get('signups', {}).size() == 0
+        && request.resource.data.get('photoCount', 0) == 0
+        && request.resource.data.get('cover', null) == null
+        && request.resource.data.get('feedbackCount', 0) == 0
+        && request.resource.data.get('feedbackSum', 0) == 0
+        && !('updatedBy' in request.resource.data)
+        && request.resource.data.get('cancelled', false) == false;
+      allow update: if signedIn() && okEvent(request.resource.data) && (
+        (!changed().hasAny(['createdBy', 'createdAt', 'signups', 'photoCount', 'cover', 'feedbackCount', 'feedbackSum'])
+          && request.resource.data.get('updatedBy', me()) == me()
+          && ((isHost(resource.data)
+               && request.resource.data.official == resource.data.official
+               && !changed().hasAny(['coachId'])
+               && (resource.data.createdBy == me() || !changed().hasAny(['cohosts'])))
+              || isAdmin()))
+        || (changed().hasOnly(['signups']) && mySignup())
+        || (changed().hasOnly(['photoCount', 'cover']) && photoCounter())
+        || (changed().hasOnly(['feedbackCount', 'feedbackSum']) && feedbackCounter(eventId))
+      );
+      allow delete: if signedIn() && (resource.data.createdBy == me() || isAdmin());
+
+      match /progress/{userId} {
+        allow read: if signedIn();
+        allow create, update: if signedIn() && me() == userId
+          && request.resource.data.keys().hasOnly(['uid', 'counts', 'done', 'updatedAt'])
+          && request.resource.data.uid == userId
+          && okCounts(request.resource.data.counts)
+          && request.resource.data.done is bool
+          && request.resource.data.updatedAt is int
+          && eventExists(eventId);
+        allow delete: if signedIn() && me() == userId;
+      }
+      match /checkins/{userId} {
+        allow read: if signedIn();
+        allow create: if signedIn() && okCheckin(request.resource.data, userId, eventData(eventId)) && checkinAllowed(eventData(eventId), userId);
+        allow delete: if signedIn() && (me() == userId || isHost(eventData(eventId)) || isAdmin());
+        allow update: if false;
+      }
+      match /feedback/{userId} {
+        allow read: if signedIn() && (me() == userId || isHost(eventData(eventId)) || isAdmin());
+        allow create, update: if signedIn() && me() == userId
+          && request.resource.data.keys().hasOnly(['uid', 'rating', 'text', 'at'])
+          && request.resource.data.uid == userId
+          && request.resource.data.rating is int && request.resource.data.rating >= 1 && request.resource.data.rating <= 5
+          && str(request.resource.data.text, 500)
+          && okTime(request.resource.data.at)
+          && eventExists(eventId)
+          && getAfter(eventPath(eventId)).data.get('feedbackSum', 0)
+             == get(eventPath(eventId)).data.get('feedbackSum', 0) + request.resource.data.rating - (resource == null ? 0 : resource.data.rating);
+        allow delete: if false;
+      }
+      match /photos/{photoId} {
+        allow read: if signedIn();
+        allow create: if signedIn() && okPhoto(request.resource.data) && photoAllowed(eventData(eventId), request.resource.data.host);
+        allow delete: if signedIn() && (resource.data.uid == me() || isHost(eventData(eventId)) || isAdmin());
+        allow update: if false;
+      }
+    }
+
+    function okCheckin(d, userId, e) {
+      return d.keys().hasOnly(['uid', 'at', 'by', 'date', 'time', 'sport']) && d.uid == userId && d.by == me() && okTime(d.at)
+        && d.date == e.date && d.time == e.get('time', '') && d.sport == e.sport;
+    }
+    function checkinAllowed(e, userId) {
+      let t = request.time.toMillis();
+      return (userId == me() && e.get('cancelled', false) == false
+              && e.get('checkinFrom', null) is int && t >= e.checkinFrom && t <= e.checkinUntil)
+        || isHost(e) || isAdmin();
+    }
+    function okPhoto(d) {
+      return d.keys().hasOnly(['uid', 'url', 'w', 'h', 'at', 'host'])
+        && d.uid == me()
+        && str(d.url, 650000)
+        && d.w is int && d.h is int
+        && okTime(d.at)
+        && d.host is bool;
+    }
+    function photoAllowed(e, asHost) {
+      return (asHost == false && e.get('photoPolicy', 'all') == 'all') || isHost(e) || isAdmin();
+    }
+
+    match /{path=**}/checkins/{userId} { allow read: if signedIn(); }
+    match /{path=**}/kudos/{userId} { allow read: if signedIn(); }
+
+    function okActivity(d) {
+      return d.keys().hasOnly(['uid', 'kind', 'sport', 'title', 'text', 'distanceKm', 'durationSec', 'reps',
+                               'eventId', 'photoURL', 'official', 'badge', 'createdAt', 'kudos', 'comments'])
+        && d.uid == me()
+        && d.kudos == 0 && d.comments == 0
+        && okTime(d.createdAt)
+        && (!('sport' in d) || d.sport in ['calisthenics', 'fitness', 'lob', 'cykling', 'gang', 'yoga', 'vinterbadning', 'socialt', 'andet'])
+        && (!('title' in d) || (d.title is string && d.title.size() <= 80))
+        && (!('text' in d) || (d.text is string && d.text.size() <= 1000))
+        && (!('photoURL' in d) || str(d.photoURL, 450000))
+        && (!('eventId' in d) || (d.eventId is string && d.eventId.size() <= 40))
+        && (!('badge' in d) || (d.badge is string && d.badge.size() <= 40))
+        && (!('distanceKm' in d) || d.distanceKm is number)
+        && (!('durationSec' in d) || d.durationSec is number)
+        && (!('reps' in d) || okReps(d.reps))
+        && (!('official' in d) || d.official == false);
+    }
+    function okKind(d, activityId) {
+      return (d.kind == 'workout' && !activityId.matches('(rsvp|goal|event|badge)_.*'))
+        || (d.kind == 'rsvp' && activityId == 'rsvp_' + d.eventId + '_' + me() && me() in eventData(d.eventId).get('signups', {}))
+        || (d.kind == 'event' && activityId == 'event_' + d.eventId && eventData(d.eventId).createdBy == me())
+        || (d.kind == 'goal' && activityId == 'goal_' + d.eventId + '_' + me() && eventExists(d.eventId))
+        || (d.kind == 'badge' && activityId == 'badge_' + me() + '_' + d.badge
+            && d.badge in get(/databases/$(database)/documents/users/$(me())).data.get('badges', {}));
+    }
+    function kudosPath(activityId) { return /databases/$(database)/documents/activities/$(activityId)/kudos/$(request.auth.uid); }
+    function kudosCounter(activityId) {
+      let was = resource.data.get('kudos', 0);
+      let now = request.resource.data.kudos;
+      return (now == was + 1 && !exists(kudosPath(activityId)) && existsAfter(kudosPath(activityId)))
+        || (now == was - 1 && now >= 0 && exists(kudosPath(activityId)) && !existsAfter(kudosPath(activityId)));
+    }
+
+    match /activities/{activityId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && okActivity(request.resource.data) && okKind(request.resource.data, activityId);
+      allow update: if signedIn() && (
+        (resource.data.uid == me()
+          && changed().hasOnly(['title', 'text', 'photoURL'])
+          && optStr(request.resource.data, 'title', 80)
+          && optStr(request.resource.data, 'text', 1000)
+          && optStr(request.resource.data, 'photoURL', 450000))
+        || (changed().hasOnly(['kudos']) && kudosCounter(activityId))
+        || (changed().hasOnly(['comments']) && step(resource.data.get('comments', 0), request.resource.data.comments))
+      );
+      allow delete: if signedIn() && (resource.data.uid == me() || isAdmin()
+        || (resource.data.kind in ['rsvp', 'event'] && eventExists(resource.data.eventId) && isHost(eventData(resource.data.eventId))));
+
+      match /kudos/{userId} {
+        allow read: if signedIn();
+        allow create: if signedIn() && me() == userId
+          && request.resource.data.keys().hasOnly(['uid', 'at'])
+          && request.resource.data.uid == userId
+          && request.resource.data.at is int
+          && get(/databases/$(database)/documents/activities/$(activityId)).data.uid != me();
+        allow delete: if signedIn() && me() == userId;
+        allow update: if false;
+      }
+      match /comments/{commentId} {
+        allow read: if signedIn();
+        allow create: if signedIn()
+          && request.resource.data.keys().hasOnly(['uid', 'text', 'at'])
+          && request.resource.data.uid == me()
+          && str(request.resource.data.text, 500) && request.resource.data.text.size() > 0
+          && okTime(request.resource.data.at)
+          && exists(/databases/$(database)/documents/activities/$(activityId));
+        allow delete: if signedIn() && (resource.data.uid == me() || isAdmin()
+          || get(/databases/$(database)/documents/activities/$(activityId)).data.uid == me());
+        allow update: if false;
+      }
+    }
+
+    match /nudges/{nudgeId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin()
+        && request.resource.data.keys().hasOnly(['from', 'to', 'text', 'eventId', 'at', 'status', 'sentAt'])
+        && request.resource.data.from == me()
+        && request.resource.data.to is string && request.resource.data.to != me()
+        && str(request.resource.data.text, 300)
+        && (!('eventId' in request.resource.data) || str(request.resource.data.eventId, 40))
+        && okTime(request.resource.data.at)
+        && request.resource.data.status in ['sent', 'skipped']
+        && (request.resource.data.status == 'skipped' || request.resource.data.sentAt is int);
+      allow update, delete: if false;
+    }
+
+    match /calendarTokens/{token} {
+      allow create: if signedIn() && token.size() >= 32 && token.size() <= 64
+        && request.resource.data.keys().hasOnly(['uid', 'scope', 'createdAt'])
+        && request.resource.data.uid == me()
+        && request.resource.data.scope in ['mine', 'all']
+        && request.resource.data.createdAt is int;
+      allow delete: if signedIn() && resource.data.uid == me();
+      allow read, update: if false;
+    }
+
+    match /settings/{docId} {
+      allow read: if signedIn();
+      allow write: if isAdmin() && docId == 'team'
+        && request.resource.data.keys().hasOnly(['weather', 'updatedAt'])
+        && (!('weather' in request.resource.data) || request.resource.data.weather == null || okGeo(request.resource.data.weather));
+    }
+
+    match /instagram/{docId} {
+      allow read: if signedIn();
+      allow write: if isAdmin() && docId == 'feed'
+        && request.resource.data.keys().hasOnly(['username', 'posts', 'updatedAt', 'error'])
+        && str(request.resource.data.username, 60)
+        && request.resource.data.posts is list && request.resource.data.posts.size() <= 12
+        && request.resource.data.updatedAt is int
+        && optStr(request.resource.data, 'error', 200);
+    }
+
+    match /config/admin {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['uid', 'at'])
+        && request.resource.data.uid == me()
+        && request.resource.data.at is int
+        && getAfter(/databases/$(database)/documents/users/$(me())).data.role == 'admin';
+      allow update, delete: if false;
+    }
+    match /config/instagram {
+      allow read: if isAdmin();
+      allow create, update: if isAdmin()
+        && request.resource.data.keys().hasOnly(['token', 'savedAt', 'refreshedAt', 'expiresAt'])
+        && str(request.resource.data.token, 2000)
+        && request.resource.data.savedAt is int;
+      allow delete: if false;
+    }
+  }
+}

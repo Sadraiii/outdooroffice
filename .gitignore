@@ -1,0 +1,14 @@
+node_modules/
+web/dist/
+web/dist-demo/
+functions/lib/
+worker/.test/
+.wrangler/
+.firebase/
+*.log
+.env
+.env.local
+.env.*.local
+functions/.env
+*-firebase-adminsdk-*.json
+.DS_Store

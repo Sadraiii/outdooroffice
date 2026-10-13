@@ -1,0 +1,17 @@
+{
+  "name": "outdoor-office-worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "typecheck": "tsc --noEmit",
+    "test": "esbuild test/worker.test.ts --bundle --platform=node --format=esm --outfile=.test/worker.test.mjs --log-level=warning && node --test .test/worker.test.mjs"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261013.1",
+    "typescript": "~5.9.3",
+    "wrangler": "^4.149.0",
+    "esbuild": "^0.25.0"
+  }
+}
