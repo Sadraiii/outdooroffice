@@ -26,26 +26,24 @@ export function FeedPage() {
 
   const list = (feed || []).filter((a) => (tab === 'all' ? true : following.has(a.uid) || a.uid === me?.id || a.official));
   const suggestions = [...users.values()].filter((u) => u.id !== me?.id && !following.has(u.id)).sort((a, b) => b.followers - a.followers).slice(0, 4);
-  const first = me?.name.split(' ')[0];
 
   return (
     <>
-      <section className="intro"><p className="eyebrow">{first ? `Hej ${first}` : 'Outdoor Office'}</p><h1 className="h1">Feed</h1></section>
+      <section className="intro"><h1 className="h1">Feed</h1></section>
       <StreakRisk heroId={next?.id} />
       <PushCard compact />
       {next && <EventHero ev={next} label={mine ? 'Din næste træning' : 'Næste event'} />}
       <InstagramStrip />
       <div className="sec-head"><h2 className="h2">Aktivitet</h2></div>
       <div className="seg" role="tablist" aria-label="Vis aktivitet fra">
-        <button role="tab" aria-selected={tab === 'follow'} onClick={() => setTab('follow')}>Dem du følger</button>
-        <button role="tab" aria-selected={tab === 'all'} onClick={() => setTab('all')}>Hele holdet</button>
+        <button role="tab" aria-selected={tab === 'follow'} onClick={() => setTab('follow')}>Følger</button>
+        <button role="tab" aria-selected={tab === 'all'} onClick={() => setTab('all')}>Alle</button>
       </div>
       {!feed ? <Skeleton /> : list.length ? (
         <ol className="feed">{list.map((a) => <Boundary key={a.id}><ActivityCard a={a} /></Boundary>)}</ol>
       ) : tab === 'follow' ? (
         <section className="empty-box">
-          <h2 className="h2">Følg dem du træner med</h2>
-          <p className="muted">Så ser du deres træninger her og får besked, når de tilmelder sig.</p>
+          <h2 className="h2">Følg nogen</h2>
           {suggestions.length > 0 && (
             <ul className="people-list" style={{ width: '100%', textAlign: 'left' }}>
               {suggestions.map((u) => (
@@ -57,12 +55,11 @@ export function FeedPage() {
               ))}
             </ul>
           )}
-          <Link to="/folk" className="link"><Icon name="users" />Se alle på holdet</Link>
+          <Link to="/community" className="link"><Icon name="users" />Community</Link>
         </section>
       ) : (
         <section className="empty-box">
-          <h2 className="h2">Ingen aktivitet endnu</h2>
-          <p className="muted">Del din første træning med plus-knappen nederst.</p>
+          <h2 className="h2">Ingen aktivitet</h2>
         </section>
       )}
     </>
@@ -87,10 +84,9 @@ function StreakRisk({ heroId }: { heroId?: string }) {
       <div className="risk-top">
         <span className="risk-ic" aria-hidden="true"><Icon name="flame" /></span>
         <div>
-          <b>{left === 0 ? `Sidste chance for din stime på ${streak} uger` : `Din stime på ${streak} uger er i fare`}</b>
+          <b>{streak} uger i træk</b>
           <span>
-            {left === 0 ? `Check ind til en træning i dag, så holder dine ${streak} uger i træk.` : `Check ind til en træning inden søndag, så bliver det til ${streak + 1} uger i træk.`}
-            {next && next.id === heroId ? ' Den næste er lige her under.' : !next ? ' Der er ingen events resten af ugen, men du kan selv oprette et.' : ''}
+            {left === 0 ? 'Check ind i dag' : 'Check ind inden søndag'}
           </span>
         </div>
       </div>

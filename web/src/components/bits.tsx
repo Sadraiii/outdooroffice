@@ -54,19 +54,19 @@ export function UserLink({ uid, children, className }: { uid: string; children: 
   return <Link to={`/u/${uid}`} className={'plain ' + (className || '')}>{children}</Link>;
 }
 
-export function FollowButton({ uid, compact }: { uid: string; compact?: boolean }) {
+export function FollowButton({ uid }: { uid: string }) {
   const { api, me, following, toast, nameOf } = useApp();
   if (!me || uid === me.id) return null;
   const on = following.has(uid);
   const click = async () => {
     try {
       if (on) await api.unfollow(me.id, uid);
-      else { await api.follow(me.id, uid); toast(`Du følger nu ${nameOf(uid)}`, { body: 'Du får besked, når de træner eller tilmelder sig.' }); }
+      else { await api.follow(me.id, uid); toast(`Du følger ${nameOf(uid)}`); }
     } catch { toast('Det lykkedes ikke. Prøv igen.'); }
   };
   return (
     <button className={'follow-btn' + (on ? ' on' : '')} onClick={click} aria-pressed={on}>
-      {on ? <><Icon name="check" />{compact ? 'Følger' : 'Følger'}</> : <><Icon name="plus" />Følg</>}
+      {on ? <><Icon name="check" />Følger</> : <><Icon name="plus" />Følg</>}
     </button>
   );
 }

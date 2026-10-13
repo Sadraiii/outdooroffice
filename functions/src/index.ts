@@ -121,7 +121,7 @@ export const sendReminders = onSchedule({ schedule: 'every 10 minutes', timeZone
       const [checked, answered] = await Promise.all([d.ref.collection('checkins').get(), d.ref.collection('feedback').get()]);
       const skip = new Set([...hostsOf(ev), ...answered.docs.map((x) => x.id)]);
       const asked = (checked.size ? checked.docs.map((x) => x.id) : seatsOf(ev).going).filter((u) => !skip.has(u));
-      await inbox(asked, 'reminders', { type: 'feedback', title: `Hvordan var ${ev.title}?`, body: 'Giv arrangøren en hurtig vurdering. Det tager fem sekunder.', link });
+      await inbox(asked, 'reminders', { type: 'feedback', title: `Hvordan var ${ev.title}?`, body: 'Giv en vurdering', link });
     }
   }
 });

@@ -25,7 +25,7 @@ export function EventsPage() {
   return (
     <>
       <div className="intro-row">
-        <section className="intro"><p className="eyebrow">Tilmeld dig</p><h1 className="h1">Events</h1></section>
+        <section className="intro"><h1 className="h1">Events</h1></section>
         <button className="btn btn-outline btn-sm" onClick={() => openSheet({ type: 'event' })}><Icon name="plus" />Opret event</button>
       </div>
       <div className="seg" role="tablist" aria-label="Vis events" style={{ marginTop: 14 }}>
@@ -35,14 +35,13 @@ export function EventsPage() {
       </div>
       {sports.length > 1 && (
         <div className="chips" role="group" aria-label="Filtrér efter sport">
-          <button className="chip" aria-pressed={sport === 'all'} onClick={() => setSport('all')}>Alle sportsgrene</button>
+          <button className="chip" aria-pressed={sport === 'all'} onClick={() => setSport('all')}>Alle</button>
           {sports.map((s) => <button key={s} className="chip" aria-pressed={sport === s} onClick={() => setSport(s)}>{sportLabel(s)}</button>)}
         </div>
       )}
       {!eventsReady ? <Skeleton /> : !next ? (
         <section className="empty-box">
-          <h2 className="h2">{kind === 'community' ? 'Ingen community-events' : 'Ingen kommende events'}</h2>
-          <p className="muted">Opret et event, så andre kan tilmelde sig. Dem der følger dig får besked.</p>
+          <h2 className="h2">Ingen events</h2>
           <button className="btn btn-primary" onClick={() => openSheet({ type: 'event' })}><Icon name="plus" />Opret event</button>
         </section>
       ) : (

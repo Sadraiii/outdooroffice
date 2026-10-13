@@ -14,8 +14,8 @@ export function SetupMissing() {
       <section className="splash" style={{ textAlign: 'left', justifyItems: 'start' }}>
         <Seal size="lg" />
         <h1 className="h1">Firebase mangler</h1>
-        <p className="lede">Appen er ikke koblet til en Firebase-database endnu. Kopiér <code>web/.env.example</code> til <code>web/.env.local</code>, udfyld værdierne fra Firebase-konsollen og start igen. Trinene står i README.</p>
-        <p className="muted small">Vil du bare se appen? Kør <code>npm run demo</code>.</p>
+        <p className="lede">Kopiér <code>web/.env.example</code> til <code>web/.env.local</code> og udfyld den.</p>
+        <p className="muted small">Demo: <code>npm run demo</code></p>
       </section>
     </div>
   );
@@ -23,18 +23,18 @@ export function SetupMissing() {
 
 const authError = (e: unknown) => {
   const code = (e as { code?: string })?.code || '';
-  if (code.includes('invalid-credential') || code.includes('wrong-password') || code.includes('user-not-found')) return 'Forkert e-mail eller adgangskode.';
-  if (code.includes('email-already-in-use')) return 'Der findes allerede en konto med den e-mail. Log ind i stedet.';
-  if (code.includes('weak-password')) return 'Adgangskoden skal være mindst 6 tegn.';
-  if (code.includes('invalid-email')) return 'E-mailen ser forkert ud.';
+  if (code.includes('invalid-credential') || code.includes('wrong-password') || code.includes('user-not-found')) return 'Forkert e-mail eller adgangskode';
+  if (code.includes('email-already-in-use')) return 'E-mailen er allerede i brug';
+  if (code.includes('weak-password')) return 'Mindst 6 tegn';
+  if (code.includes('invalid-email')) return 'Ugyldig e-mail';
   if (code.includes('popup-closed')) return '';
-  if (code.includes('network')) return 'Ingen forbindelse. Prøv igen.';
-  if (code.includes('operation-not-allowed')) return 'Login-metoden er ikke slået til. I Firebase: Authentication → Sign-in method → slå E-mail/adgangskode (og Google) til.';
-  if (code.includes('configuration-not-found')) return 'Authentication er ikke sat op endnu. I Firebase: Authentication → Kom i gang.';
-  if (code.includes('unauthorized-domain')) return 'Adressen er ikke godkendt. I Firebase: Authentication → Settings → Authorized domains → tilføj den.';
-  if (code.includes('api-key') || code.includes('app-not-authorized')) return 'Firebase-nøglen i web/.env.local passer ikke til projektet.';
-  if (code.includes('too-many-requests')) return 'For mange forsøg. Vent lidt og prøv igen.';
-  return `Det lykkedes ikke. Prøv igen.${code ? ` (${code})` : ''}`;
+  if (code.includes('network')) return 'Ingen forbindelse';
+  if (code.includes('operation-not-allowed')) return 'Login-metoden er ikke slået til i Firebase';
+  if (code.includes('configuration-not-found')) return 'Firebase Authentication er ikke sat op';
+  if (code.includes('unauthorized-domain')) return 'Domænet er ikke godkendt i Firebase';
+  if (code.includes('api-key') || code.includes('app-not-authorized')) return 'Forkert Firebase-nøgle';
+  if (code.includes('too-many-requests')) return 'For mange forsøg. Prøv igen senere.';
+  return `Det lykkedes ikke${code ? ` (${code})` : ''}`;
 };
 
 export function LoginPage() {
@@ -52,15 +52,14 @@ export function LoginPage() {
         <div className="auth-head">
           <Seal size="xl" />
           <h1 className="h1">Outdoor<br />Office</h1>
-          <p className="lede">Træn sammen udenfor. Se hvem der kommer, tilmeld dig events og få besked, når dem du følger er i gang.</p>
         </div>
         <form className="form" onSubmit={(e) => { e.preventDefault(); run(() => (mode === 'in' ? api.signInEmail(email.trim(), pw) : api.signUpEmail(email.trim(), pw))); }}>
           <div className="field"><label htmlFor="l-email">E-mail</label><input id="l-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
           <div className="field"><label htmlFor="l-pw">Adgangskode</label><input id="l-pw" type="password" autoComplete={mode === 'in' ? 'current-password' : 'new-password'} minLength={6} value={pw} onChange={(e) => setPw(e.target.value)} required /></div>
           <button className="btn btn-primary btn-wide" type="submit" disabled={busy}>{mode === 'in' ? 'Log ind' : 'Opret konto'}</button>
           <div className="tags" style={{ justifyContent: 'space-between' }}>
-            <button type="button" className="link" onClick={() => { setMode(mode === 'in' ? 'up' : 'in'); setErr(''); }}>{mode === 'in' ? 'Ny her? Opret konto' : 'Har du en konto? Log ind'}</button>
-            {mode === 'in' && <button type="button" className="link" onClick={() => (email.trim() ? run(async () => { await api.resetPassword(email.trim()); setInfo('Vi har sendt et link til at nulstille adgangskoden.'); }) : setErr('Skriv din e-mail først.'))}>Glemt adgangskode?</button>}
+            <button type="button" className="link" onClick={() => { setMode(mode === 'in' ? 'up' : 'in'); setErr(''); }}>{mode === 'in' ? 'Opret konto' : 'Log ind'}</button>
+            {mode === 'in' && <button type="button" className="link" onClick={() => (email.trim() ? run(async () => { await api.resetPassword(email.trim()); setInfo('Tjek din e-mail'); }) : setErr('Skriv din e-mail'))}>Glemt adgangskode?</button>}
           </div>
           {err && <p className="form-err" role="alert">{err}</p>}
           {info && <p className="banner">{info}</p>}
@@ -83,22 +82,21 @@ export function Onboarding() {
   const [busy, setBusy] = useState(false);
   const save = async () => {
     if (!user) return;
-    if (!name.trim()) { setErr('Skriv det navn, holdet skal se.'); return; }
+    if (!name.trim()) { setErr('Skriv dit navn'); return; }
     setBusy(true); setErr('');
     try { await api.createProfile(user.uid, { name: name.trim().slice(0, 40), instagram: cleanHandle(ig), photoURL: user.photoURL }); }
-    catch { setErr('Profilen blev ikke oprettet. Prøv igen.'); setBusy(false); }
+    catch { setErr('Det lykkedes ikke. Prøv igen.'); setBusy(false); }
   };
   return (
     <div className="app bare">
       <section className="auth">
         <div className="welcome" style={{ justifyItems: 'start', textAlign: 'left' }}>
           <Seal size="xl" />
-          <h1 className="h1">Velkommen på holdet</h1>
-          <p className="lede">Her ser du events, tilmelder dig og deler dine træninger. Dem der følger dig får besked, når du er i gang.</p>
+          <h1 className="h1">Velkommen</h1>
         </div>
         <form className="form" onSubmit={(e) => { e.preventDefault(); save(); }}>
-          <div className="field"><label htmlFor="o-name">Hvad skal holdet kalde dig?</label><input id="o-name" maxLength={40} autoComplete="nickname" value={name} onChange={(e) => setName(e.target.value)} /></div>
-          <div className="field"><label htmlFor="o-ig">Instagram (valgfrit)</label><input id="o-ig" maxLength={60} autoCapitalize="none" autoCorrect="off" placeholder="@ditbrugernavn" value={ig} onChange={(e) => setIg(e.target.value)} /></div>
+          <div className="field"><label htmlFor="o-name">Navn</label><input id="o-name" maxLength={40} autoComplete="nickname" value={name} onChange={(e) => setName(e.target.value)} /></div>
+          <div className="field"><label htmlFor="o-ig">Instagram</label><input id="o-ig" maxLength={60} autoCapitalize="none" autoCorrect="off" placeholder="@brugernavn" value={ig} onChange={(e) => setIg(e.target.value)} /></div>
           <button className="btn btn-primary btn-wide" type="submit" disabled={busy}>Kom i gang<Icon name="chev" /></button>
           {err && <p className="form-err" role="alert">{err}</p>}
         </form>

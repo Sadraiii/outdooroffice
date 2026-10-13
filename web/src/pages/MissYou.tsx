@@ -43,13 +43,12 @@ export function MissYouPage() {
   return (
     <>
       <div className="crumb"><Link className="back" to={me ? `/u/${me.id}` : '/'}><Icon name="back" />Mig</Link></div>
-      <section className="intro"><p className="eyebrow">Til coaches</p><h1 className="h1">Vi savner dig</h1></section>
-      <p className="lede miss-lede">Dem der ikke har været til træning i 3 uger eller mere. En personlig hilsen med en invitation til næste træning får mange med igen.</p>
-      {DEMO && !isAdmin && <p className="banner">I demoen ser du siden, som en coach ser den. I appen kan kun admins se den og sende hilsner.</p>}
+      <section className="intro"><h1 className="h1">Vi savner dig</h1></section>
+      {DEMO && !isAdmin && <p className="banner">Demo: kun admins ser denne side</p>}
       <div className="tiles">
-        <div className="tile"><b>{active}</b><span>Trænet de sidste 3 uger</span></div>
+        <div className="tile"><b>{active}</b><span>Aktive</span></div>
         <div className="tile"><b>{list.length}</b><span>Savnet</span></div>
-        <div className="tile"><b>{greeted}</b><span>Hilst på i denne uge</span></div>
+        <div className="tile"><b>{greeted}</b><span>Hilst på</span></div>
       </div>
       {!nudges ? <Skeleton /> : list.length ? (
         <ul className="miss-list">
@@ -64,11 +63,11 @@ export function MissYouPage() {
                   <UserLink uid={u.id}><b>{u.name}</b></UserLink>
                   <span className="miss-away">
                     {away === null
-                      ? `Ikke checket ind endnu · med siden ${shortDate(ymd(new Date(u.createdAt)))}`
-                      : `Sidst til træning ${u.stats?.lastDate ? shortDate(u.stats.lastDate) : ''} · ${away} uger siden`}
+                      ? `Aldrig checket ind · med siden ${shortDate(ymd(new Date(u.createdAt)))}`
+                      : `Sidst ${u.stats?.lastDate ? shortDate(u.stats.lastDate) : ''} · ${away} uger siden`}
                   </span>
                   {signed && <span className="miss-note good"><Icon name="check" />{signed.waitlist.includes(u.id) ? 'På venteliste til' : 'Tilmeldt'} {signed.title} {whenText(signed)}</span>}
-                  {last && <span className="miss-note"><Icon name="megaphone" />{shownName(last.from)} sendte en hilsen {ago(last.sentAt || last.at)}</span>}
+                  {last && <span className="miss-note"><Icon name="megaphone" />{shownName(last.from)} · {ago(last.sentAt || last.at)}</span>}
                 </div>
                 {lately
                   ? <span className="btn btn-sm btn-done is-static"><Icon name="check" />Hilst på</span>
@@ -80,10 +79,8 @@ export function MissYouPage() {
       ) : (
         <section className="empty-box">
           <h2 className="h2">Ingen savnede</h2>
-          <p className="muted">Alle har været til træning inden for de seneste 3 uger.</p>
         </section>
       )}
-      <p className="small muted miss-foot">Hilsenen kommer som en push-besked fra dig, med et link til den træning, du inviterer til. Hver person får højst én hilsen om ugen, uanset hvem der sender den.</p>
     </>
   );
 }

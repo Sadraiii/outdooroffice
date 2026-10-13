@@ -26,9 +26,9 @@ export function CheckinButton({ ev, mine, wide }: { ev: EventDoc; mine: boolean;
       if (!mine) {
         buzz(20);
         if (!myRsvps.has(ev.id) && !isFull(ev) && !signupClosed(ev)) api.setRsvp(ev.id, me.id, true).catch(() => undefined);
-        toast('Du er checket ind', { body: 'Træningen tæller med i dine uger i træk.' });
-      } else toast('Check-in er fjernet');
-    } catch { toast(mine ? 'Det lykkedes ikke. Prøv igen.' : 'Check-in er lukket for dette event.'); }
+        toast('Checket ind');
+      } else toast('Check-in fjernet');
+    } catch { toast(mine ? 'Det lykkedes ikke. Prøv igen.' : 'Check-in er lukket'); }
     setBusy(false);
   };
   const cls = (c: string) => `btn ${c}${wide ? ' btn-wide' : ''}`;
@@ -105,9 +105,8 @@ export function Attendance({ u, isMe }: { u: UserProfile; isMe: boolean }) {
         <div className={'tile' + (streak >= 2 ? ' hot' : '')}><b>{streak >= 2 && <Icon name="flame" />}{fmt(streak)}</b><span>Uger i træk</span></div>
         <div className="tile"><b>{fmt(s?.bestStreak || 0)}</b><span>Bedste stime</span></div>
       </div>
-      {s?.trainings ? <WeekStrip s={s} /> : <p className="small muted" style={{ marginTop: 10 }}>{isMe ? 'Check ind, når du er til træning, så tæller den med her.' : 'Ingen træninger checket ind endnu.'}</p>}
+      {s?.trainings ? <WeekStrip s={s} /> : <p className="small muted" style={{ marginTop: 10 }}>Ingen træninger endnu</p>}
       <div className="sec-head"><h2 className="h2">Mærker</h2><span className="muted small">{earned.length} af {BADGES.length}</span></div>
-      {isMe && earned.length > 0 && <p className="small muted badges-hint">Tryk på et mærke for at dele det på Instagram.</p>}
       <ul className="badges">
         {earned.map((b) => (
           <li key={b.id}>

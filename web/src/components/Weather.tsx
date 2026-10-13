@@ -53,7 +53,7 @@ export function PlacePicker({ value, onChange, fallback, busy }: { value: GeoPla
     if (!open || term.length < 2) { setList(null); return; }
     let alive = true;
     const t = setTimeout(() => {
-      api.searchPlaces(term).then((r) => { if (alive) { setList(r); setErr(''); } }).catch(() => { if (alive) setErr('Søgningen virker ikke lige nu. Prøv igen om lidt.'); });
+      api.searchPlaces(term).then((r) => { if (alive) { setList(r); setErr(''); } }).catch(() => { if (alive) setErr('Søgning virker ikke lige nu'); });
     }, 250);
     return () => { alive = false; clearTimeout(t); };
   }, [api, q, open]);
@@ -63,15 +63,15 @@ export function PlacePicker({ value, onChange, fallback, busy }: { value: GeoPla
     <div className="place-pick">
       <div className="place-cur">
         <Icon name="w-partly" />
-        <span>{shown ? <>Vejret for <b>{shown.name}</b>{!value && fallback ? ' (holdets by)' : ''}</> : 'Ingen by valgt til vejret'}</span>
+        <span>{shown ? <>Vejr: <b>{shown.name}</b></> : 'Vejr: ingen by'}</span>
         <button type="button" className="link" onClick={() => setOpen(!open)} disabled={busy} aria-expanded={open}>{open ? 'Luk' : shown ? 'Skift' : 'Vælg by'}</button>
       </div>
       {open && (
         <div className="place-search">
           <div className="search">
             <Icon name="search" />
-            <label className="sr" htmlFor="place-q">Søg efter by</label>
-            <input id="place-q" type="search" value={q} placeholder="Søg efter by, fx Roskilde" autoComplete="off" onChange={(e) => setQ(e.target.value)} autoFocus />
+            <label className="sr" htmlFor="place-q">Søg by</label>
+            <input id="place-q" type="search" value={q} placeholder="Søg by" autoComplete="off" onChange={(e) => setQ(e.target.value)} autoFocus />
           </div>
           {err && <p className="form-err">{err}</p>}
           {list && (list.length ? (
@@ -80,7 +80,7 @@ export function PlacePicker({ value, onChange, fallback, busy }: { value: GeoPla
                 <li key={`${p.lat},${p.lon}`}><button type="button" onClick={() => pick(p)}><b>{p.name}</b>{p.region && <span>{p.region}</span>}</button></li>
               ))}
             </ul>
-          ) : <p className="small muted">Ingen byer matcher.</p>)}
+          ) : <p className="small muted">Ingen fundet</p>)}
           {value && fallback && <button type="button" className="link" onClick={() => pick(null)}><Icon name="refresh" />Brug holdets by ({fallback.name})</button>}
         </div>
       )}

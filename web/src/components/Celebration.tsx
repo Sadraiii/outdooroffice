@@ -39,7 +39,7 @@ export function CelebrationLayer() {
   const share = () => { if (!badge || !me || !settled()) return; endCelebration(); openSheet({ type: 'share-badge', badge: badge.id, uid: me.id }); };
 
   return (
-    <div className="celebrate" role="dialog" aria-modal="true" aria-labelledby="cel-title" aria-describedby="cel-sub">
+    <div className="celebrate" role="dialog" aria-modal="true" aria-labelledby="cel-title" aria-describedby={badge ? 'cel-sub' : undefined}>
       <div className="scrim" onClick={close} />
       {!reducedMotion() && (
         <div className="confetti" aria-hidden="true">
@@ -51,9 +51,9 @@ export function CelebrationLayer() {
       )}
       <div className="cel-card">
         {badge ? <BadgeArt id={badge.id} size={116} /> : <span className="cel-ic"><Icon name="trophy" /></span>}
-        <p className="eyebrow">{badge ? 'Nyt mærke' : 'Hele programmet er klaret'}</p>
+        <p className="eyebrow">{badge ? 'Nyt mærke' : 'Program klaret'}</p>
         <h2 className="cel-title" id="cel-title">{badge ? badge.name : celebration.kind === 'program' ? celebration.title : ''}</h2>
-        <p className="cel-sub" id="cel-sub">{badge ? badge.desc : celebration.kind === 'program' ? celebration.sub : ''}</p>
+        {badge && <p className="cel-sub" id="cel-sub">{badge.desc}</p>}
         <div className="cel-btns">
           {badge && me && <button type="button" className="btn btn-outline" onClick={share}><Icon name="insta" />Del på Instagram</button>}
           <button type="button" ref={ok} className="btn btn-primary" onClick={close}>Fedt!</button>

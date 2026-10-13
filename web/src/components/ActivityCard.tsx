@@ -122,7 +122,7 @@ export function ActivityCard({ a, full }: { a: Activity; full?: boolean }) {
         {hf.popEl}
         <Head a={a} sub={ev ? (ev.official ? 'Nyt OFFICIAL EVENT' : 'Nyt COMMUNITY MADE EVENT') : 'Nyt event'} />
         {ev?.cover && <img className="act-photo is-link" src={ev.cover} alt="" loading="lazy" onClick={() => nav(`/e/${ev.id}`)} />}
-        {ev ? <EventChip ev={ev} /> : <p className="muted">Eventet er ikke tilgængeligt længere.</p>}
+        {ev ? <EventChip ev={ev} /> : <p className="muted">Eventet findes ikke</p>}
         <Foot a={a} />
       </li>
     );

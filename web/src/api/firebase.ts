@@ -397,7 +397,7 @@ export const api: Api = {
     b.update(doc(db, 'users', me), { following: increment(1) });
     await b.commit();
     const name = userCache.get(me)?.name || 'Nogen';
-    quietly(notify([other], 'follows', { type: 'follows', title: `${name} følger dig nu`, body: 'Følg tilbage for at se deres træninger', link: `/u/${me}` }, `f_${me}`));
+    quietly(notify([other], 'follows', { type: 'follows', title: `${name} følger dig`, body: '', link: `/u/${me}` }, `f_${me}`));
   },
   async unfollow(me, other) {
     const b = writeBatch(db);
@@ -491,7 +491,7 @@ export const api: Api = {
       if (isPastDate(ev.date)) return;
       const people = [...ev.going, ...ev.waitlist];
       if (cancelled) await notify(people, null, { type: 'cancel', title: `Aflyst: ${ev.title}`, body: [capFirst(whenOf(ev)), cut(note.trim(), 160)].filter(Boolean).join(' · '), link: `/e/${id}` });
-      else await notify(people, null, { type: 'reopen', title: `Bliver alligevel til noget: ${ev.title}`, body: [capFirst(whenOf(ev)), ev.place].filter(Boolean).join(' · '), link: `/e/${id}` });
+      else await notify(people, null, { type: 'reopen', title: `Genåbnet: ${ev.title}`, body: [capFirst(whenOf(ev)), ev.place].filter(Boolean).join(' · '), link: `/e/${id}` });
     })());
   },
   watchCheckins(eventId, cb) {
@@ -545,7 +545,7 @@ export const api: Api = {
     await setDoc(doc(collection(db, 'nudges')), { from, to, text: msg, ...(eventId ? { eventId } : {}), at: now, status: recent ? 'skipped' : 'sent', ...(recent ? {} : { sentAt: now }) });
     if (recent) return;
     const name = userCache.get(from)?.name || 'Holdet';
-    await notify([to], null, { type: 'nudge', title: `${name}: Vi savner dig til træning`, body: msg || 'Kom og vær med igen. Vi glæder os til at se dig.', link: eventId ? `/e/${eventId}` : '/events' });
+    await notify([to], null, { type: 'nudge', title: `${name}: Vi savner dig til træning`, body: msg, link: eventId ? `/e/${eventId}` : '/events' });
   },
   async deleteEvent(id) {
     const ref = doc(db, 'events', id);
@@ -558,7 +558,7 @@ export const api: Api = {
     await Promise.allSettled(photos.docs.map((d) => deleteDoc(d.ref)));
     await deleteDoc(ref);
     if (!ev.cancelled && !isPastDate(ev.date)) {
-      quietly(notify([...ev.going, ...ev.waitlist].filter((u) => u !== ev.createdBy), null, { type: 'cancel', title: `Aflyst: ${ev.title}`, body: `${capFirst(whenOf(ev))} · Eventet er slettet`, link: '/events' }));
+      quietly(notify([...ev.going, ...ev.waitlist].filter((u) => u !== ev.createdBy), null, { type: 'cancel', title: `Aflyst: ${ev.title}`, body: capFirst(whenOf(ev)), link: '/events' }));
     }
   },
   watchProgress(eventId, cb) {
@@ -579,7 +579,7 @@ export const api: Api = {
     await b.commit();
     if (!host) {
       const name = userCache.get(uid)?.name || 'Nogen';
-      quietly(notify(hostsOf(ev).filter((x) => x !== uid), 'social', { type: 'photos', title: `${name} delte billeder fra ${ev.title}`, body: 'Se dem under Billeder på eventet', link: `/e/${eventId}` },
+      quietly(notify(hostsOf(ev).filter((x) => x !== uid), 'social', { type: 'photos', title: `${name} delte billeder`, body: ev.title, link: `/e/${eventId}` },
         `ph_${uid}_${eventId}_${Math.floor(Date.now() / (6 * 36e5))}`));
     }
   },

@@ -15,7 +15,7 @@ export type SheetState =
   | { type: 'share-badge'; badge: string; uid: string }
   | { type: 'nudge'; uid: string };
 
-export type Celebration = { kind: 'badge'; badge: string } | { kind: 'program'; title: string; sub: string };
+export type Celebration = { kind: 'badge'; badge: string } | { kind: 'program'; title: string };
 
 export interface Toast { id: number; title: string; body?: string; link?: string }
 

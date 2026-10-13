@@ -290,7 +290,7 @@ let notices: Notice[] = [
   { id: 'n3', type: 'kudos', actorId: 'u_jonas', title: 'Jonas gav dig high five', body: 'For Calisthenics', link: '/a/a6', at: now - 3 * HOUR, read: false },
   { id: 'n4', type: 'community', actorId: 'u_nanna', title: 'Nanna har oprettet et event', body: 'COMMUNITY MADE EVENT · Vinterbadning ved molen', link: '/e/e_swim', at: now - 5 * HOUR, read: true },
   { id: 'n5', type: 'official', actorId: 'u_jonas', title: 'Nyt OFFICIAL EVENT: Calisthenics', body: `${cap(whenText(events.get('e_cal2')!))} · Calisthenics-parken ved havnen`, link: '/e/e_cal2', at: now - 26 * HOUR, read: true },
-  { id: 'n6', type: 'follows', actorId: 'u_ali', title: 'Ali følger dig nu', body: 'Følg tilbage for at se hans træninger', link: '/u/u_ali', at: now - 2 * DAY, read: true },
+  { id: 'n6', type: 'follows', actorId: 'u_ali', title: 'Ali følger dig', body: '', link: '/u/u_ali', at: now - 2 * DAY, read: true },
   { id: 'n7', type: 'cancel', actorId: 'u_oliver', title: 'Aflyst: Bakkeløb', body: `${cap(whenText(events.get('e_hill')!))} · ${events.get('e_hill')!.cancelNote}`, link: '/e/e_hill', at: now - 4 * HOUR, read: false },
   { id: 'n8', type: 'change', actorId: 'u_amira', title: 'Nyt sted: Morgenfitness', body: `${cap(whenText(events.get('e_fit')!))} · Græsplænen ved stranden`, link: '/e/e_fit', at: now - 20 * HOUR, read: true },
 ];

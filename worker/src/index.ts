@@ -114,7 +114,7 @@ async function reminders(c: Ctx) {
       ]);
       const skip = new Set([...hostsOf(ev), ...answered.map((x) => x.path.split('/').pop()!)]);
       const asked = (checked.length ? checked.map((x) => x.path.split('/').pop()!) : seatsOf(ev).going).filter((u) => !skip.has(u));
-      await remind(c, asked, { type: 'feedback', title: `Hvordan var ${ev.title}?`, body: 'Giv arrangøren en hurtig vurdering. Det tager fem sekunder.', link });
+      await remind(c, asked, { type: 'feedback', title: `Hvordan var ${ev.title}?`, body: 'Giv en vurdering', link });
     }
   }
 }

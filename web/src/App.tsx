@@ -23,7 +23,7 @@ export function App() {
   const [failed, setFailed] = useState(false);
   useEffect(() => { if (configured) loadApi().then(setApi).catch(() => setFailed(true)); }, []);
   if (!configured) return <SetupMissing />;
-  if (failed) return <Splash text="Appen kunne ikke starte. Tjek forbindelsen og genindlæs siden." />;
+  if (failed) return <Splash text="Appen kunne ikke starte" />;
   if (!api) return <Splash />;
   const Router = DEMO ? MemoryRouter : BrowserRouter;
   return (
@@ -61,7 +61,7 @@ function Shell() {
             <Route path="/events" element={<EventsPage />} />
             <Route path="/e/:id" element={<EventPage />} />
             <Route path="/a/:id" element={<ActivityPage />} />
-            <Route path="/folk" element={<PeoplePage />} />
+            <Route path="/community" element={<PeoplePage />} />
             <Route path="/u/:id" element={<ProfilePage />} />
             <Route path="/mig" element={<Navigate to={`/u/${me!.id}`} replace />} />
             <Route path="/notifikationer" element={<NotificationsPage />} />
@@ -81,7 +81,7 @@ function Shell() {
 
 function SheetFailed() {
   const { closeSheet, toast } = useApp();
-  useEffect(() => { closeSheet(); toast('Noget gik galt. Prøv igen.'); }, [closeSheet, toast]);
+  useEffect(() => { closeSheet(); toast('Noget gik galt'); }, [closeSheet, toast]);
   return null;
 }
 
@@ -89,7 +89,6 @@ function PageError() {
   return (
     <section className="empty-box">
       <h2 className="h2">Siden kunne ikke vises</h2>
-      <p className="muted">Prøv at gå tilbage eller genindlæse appen.</p>
       <button className="btn btn-primary" onClick={() => window.location.reload()}>Genindlæs</button>
     </section>
   );

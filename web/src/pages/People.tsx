@@ -22,11 +22,11 @@ export function PeoplePage() {
 
   return (
     <>
-      <section className="intro"><p className="eyebrow">Hele holdet</p><h1 className="h1">Folk</h1></section>
+      <section className="intro"><h1 className="h1">Community</h1></section>
       <div className="search">
         <Icon name="search" />
-        <label className="sr" htmlFor="people-q">Søg efter navn eller Instagram</label>
-        <input id="people-q" type="search" value={q} placeholder="Søg efter navn eller @instagram" onChange={(e) => setQ(e.target.value)} />
+        <label className="sr" htmlFor="people-q">Søg</label>
+        <input id="people-q" type="search" value={q} placeholder="Søg" onChange={(e) => setQ(e.target.value)} />
       </div>
       <div className="seg" role="tablist" aria-label="Vis" style={{ marginTop: 12 }}>
         <button role="tab" aria-selected={view === 'all'} onClick={() => setView('all')}>Alle</button>
@@ -47,7 +47,7 @@ export function PeoplePage() {
           ))}
         </ul>
       ) : (
-        <p className="muted" style={{ marginTop: 16 }}>{q ? 'Ingen matcher søgningen.' : view === 'following' ? 'Du følger ingen endnu.' : view === 'followers' ? 'Ingen følger dig endnu.' : 'Der er ingen andre på holdet endnu.'}</p>
+        <p className="muted" style={{ marginTop: 16 }}>{q ? 'Ingen fundet' : view === 'following' ? 'Du følger ingen' : view === 'followers' ? 'Ingen følgere' : 'Ingen endnu'}</p>
       )}
     </>
   );

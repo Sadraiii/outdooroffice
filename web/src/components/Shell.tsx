@@ -25,7 +25,7 @@ export function TabBar() {
   const tabs: { to: string; label: string; icon: IconName; active: boolean }[] = [
     { to: '/', label: 'Feed', icon: 'feed', active: p === '/' || p.startsWith('/a/') },
     { to: '/events', label: 'Events', icon: 'cal', active: p.startsWith('/events') || p.startsWith('/e/') },
-    { to: '/folk', label: 'Folk', icon: 'users', active: p.startsWith('/folk') || (p.startsWith('/u/') && p !== `/u/${me?.id}`) },
+    { to: '/community', label: 'Community', icon: 'users', active: p.startsWith('/community') || (p.startsWith('/u/') && p !== `/u/${me?.id}`) },
     { to: `/u/${me?.id}`, label: 'Mig', icon: 'user', active: p === `/u/${me?.id}` || p === '/notifikationer' || p === '/admin' || p === '/savner' },
   ];
   const tab = (t: (typeof tabs)[number]) => (

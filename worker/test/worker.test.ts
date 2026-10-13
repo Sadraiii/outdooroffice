@@ -145,7 +145,8 @@ test('push: a token for another project is refused, and odd paths are rejected',
   assert.equal((await post('jonas', Array.from({ length: 9 }, (_, i) => `users/sara/notifications/n${i}`))).status, 400);
 });
 
-test('reminders: once, to those with a seat who want them, then pushed', async () => {
+test('reminders: once, to those with a seat who want them, then pushed', async (t) => {
+  t.mock.timers.enable({ apis: ['Date'], now: Date.parse('2026-06-10T10:00:00Z') });
   pushes.length = 0;
   store.delete('users/sara/notifications/x1');
   const start = Date.now() + 2 * 3600e3 - 3 * 60e3;
@@ -162,6 +163,9 @@ test('reminders: once, to those with a seat who want them, then pushed', async (
 });
 
 test('calendar: my events as iCal', async () => {
+  const day = ymdCph(Date.now() + 864e5);
+  put('events/e1', { title: 'Calisthenics', date: day, time: '17:30', place: 'Parken', official: true, capacity: 1, signups: { sara: 1, jonas: 2 }, createdBy: 'admin' });
+  put('events/e2', { title: 'Aflyst', date: day, time: '17:30', place: '', official: false, cancelled: true, signups: { sara: 1 }, createdBy: 'admin' });
   put('calendarTokens/' + 'k'.repeat(43), { uid: 'sara', scope: 'mine', createdAt: 1 });
   const r = await handleFetch(new Request(`https://w.example/cal/${'k'.repeat(43)}.ics`), env, fakeFetch);
   const ics = await r.text();

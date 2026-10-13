@@ -26,9 +26,9 @@ export function PushCard({ compact }: { compact?: boolean }) {
     try {
       const r = await api.enablePush(me.id);
       setSt(r);
-      if (r === 'granted') toast('Push-beskeder er slået til', { body: 'Du får besked, når dem du følger er i gang.' });
-      else if (r === 'denied') toast('Push blev afvist', { body: 'Du kan slå det til i telefonens indstillinger.' });
-    } catch { toast('Push kunne ikke slås til. Prøv igen.'); }
+      if (r === 'granted') toast('Push slået til');
+      else if (r === 'denied') toast('Push afvist');
+    } catch { toast('Push kunne ikke slås til'); }
     setBusy(false);
   };
   const hide = () => { try { localStorage.setItem(HIDE_KEY, '1'); } catch {  } setGone(true); };
@@ -36,31 +36,29 @@ export function PushCard({ compact }: { compact?: boolean }) {
   let title = '', body: ReactNode = null, action: ReactNode = null;
   switch (st) {
     case 'needs-install':
-      title = 'Få push-beskeder på iPhone';
+      title = 'Push på iPhone';
       body = (
         <ol className="steps">
-          <li>Tryk på <b>Del</b>-knappen nederst i Safari.</li>
-          <li>Vælg <b>Føj til hjemmeskærm</b>.</li>
-          <li>Åbn Outdoor Office fra hjemmeskærmen og slå push til her.</li>
+          <li><b>Del</b> i Safari</li>
+          <li><b>Føj til hjemmeskærm</b></li>
+          <li>Åbn appen derfra</li>
         </ol>
       );
       break;
     case 'default':
-      title = 'Få besked, når dem du følger er i gang';
-      body = <p className="muted small">Træninger, tilmeldinger, nye events og high fives. Du vælger selv hvilke.</p>;
-      action = <button className="btn btn-primary" disabled={busy} onClick={enable}><Icon name="bell" />Slå push-beskeder til</button>;
+      title = 'Push-beskeder';
+      action = <button className="btn btn-primary" disabled={busy} onClick={enable}><Icon name="bell" />Slå til</button>;
       break;
     case 'granted':
-      title = 'Push er slået til på denne telefon';
-      body = <p className="muted small">Vælg nedenfor, hvad du vil have besked om.</p>;
+      title = 'Push er slået til';
       break;
     case 'denied':
       title = 'Push er slået fra';
-      body = <p className="muted small">Du har afvist beskeder for appen. Slå dem til igen under Notifikationer i telefonens indstillinger for Outdoor Office.</p>;
+      body = <p className="muted small">Slå det til i telefonens indstillinger.</p>;
       break;
     default:
       title = 'Push virker ikke i denne browser';
-      body = <p className="muted small">På iPhone skal appen åbnes i Safari og lægges på hjemmeskærmen. På Android virker Chrome.</p>;
+      body = <p className="muted small">Brug Safari på iPhone eller Chrome på Android.</p>;
   }
   return (
     <section className="card push-card">

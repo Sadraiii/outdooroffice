@@ -84,7 +84,7 @@ export function Counter({ x, value, onChange, readOnly }: { x: Exercise; value: 
       )}
       {!readOnly && (
         <form className="c-custom" onSubmit={(e) => { e.preventDefault(); addAmount(1); }}>
-          <input ref={amountInput} className="c-amount" inputMode="decimal" enterKeyHint="done" autoComplete="off" placeholder="Eget antal, fx 8"
+          <input ref={amountInput} className="c-amount" inputMode="decimal" enterKeyHint="done" autoComplete="off" placeholder="Eget antal"
             aria-label={`Eget antal ${x.name}`} value={amount} onChange={(e) => setAmount(e.target.value)} />
           <button type="button" className="btn btn-outline btn-sq" onClick={() => addAmount(-1)} aria-label={ok ? `Træk ${fmt(n!)} fra ${x.name}` : 'Træk fra'}>{ok ? `−${fmt(n!)}` : '−'}</button>
           <button type="submit" className="btn btn-outline c-add" aria-label={ok ? `Læg ${fmt(n!)} til ${x.name}` : 'Læg til'}>{ok ? `+${fmt(n!)}` : 'Læg til'}</button>

@@ -183,7 +183,7 @@ export async function eventStory(ev: EventDoc, goingCount: number, bg: StoryBg =
   const rows: [string, string][] = [
     ['Hvornår', `${cap(longDate(ev))}${ev.time ? ' kl. ' + ev.time : ''}`],
     ['Hvor', ev.place || 'Sted følger'],
-    ['Tilmeldte', goingCount ? `${goingCount} kommer` : `Bliv den første (${relDay(ev)})`],
+    ['Tilmeldte', goingCount ? `${goingCount} kommer` : 'Tilmelding åben'],
   ];
   rows.forEach(([k, v], i) => {
     const yy = y + i * 150;
@@ -197,7 +197,7 @@ export async function eventStory(ev: EventDoc, goingCount: number, bg: StoryBg =
     const prog = ev.exercises.map((x) => `${fmt(x.target)} ${x.unit === 'reps' ? '' : x.unit + ' '}${x.name.toLowerCase()}`.replace(/\s+/g, ' ')).join(' · ');
     wrap(ctx, prog, W - 168, 2).forEach((l, i) => ctx.fillText(l, 84, yy + 70 + i * 60));
   }
-  footer(ctx, 'Tilmeld dig i Outdoor Office-appen', cap(relDay(ev)) + (ev.time ? ' kl. ' + ev.time : ''), p);
+  footer(ctx, 'Tilmeld dig i appen', cap(relDay(ev)) + (ev.time ? ' kl. ' + ev.time : ''), p);
   return toBlob(cv);
 }
 
@@ -368,7 +368,7 @@ export async function eventSticker(ev: EventDoc, goingCount: number, look: Share
   }
   if (show('going')) {
     y += 70;
-    label(ctx, goingCount ? `${goingCount} kommer · tilmeld dig i appen` : 'Tilmeld dig i appen', cx, y, 30);
+    label(ctx, goingCount ? `${goingCount} kommer` : 'Tilmeld dig i appen', cx, y, 30);
   }
   if (show('logo')) { y += 170; lockup(ctx, glyph, cx, y, col.fg); }
   return toBlob(cropToContent(withShadows(cv, col.glow)));
@@ -487,7 +487,7 @@ export async function recapStory(ev: EventDoc, d: RecapData, bg: StoryBg = 'nigh
   };
   if (photos) { totals(); avatars(); } else { avatars(); totals(); }
   if (y + 130 <= end) { ctx.fillStyle = p.acc; fit(ctx, 'TAK FORDI I KOM!', 900, 136, DISPLAY, W - 168); ctx.fillText('TAK FORDI I KOM!', 84, Math.min(end, y + 120)); }
-  footer(ctx, d.next ? `Næste gang: ${d.next}` : 'Træn med os i Outdoor Office', [ev.place, ev.official ? 'OFFICIAL EVENT' : 'COMMUNITY MADE EVENT'].filter(Boolean).join(' · '), p);
+  footer(ctx, d.next ? `Næste gang: ${d.next}` : 'Outdoor Office', [ev.place, ev.official ? 'OFFICIAL EVENT' : 'COMMUNITY MADE EVENT'].filter(Boolean).join(' · '), p);
   return toBlob(cv);
 }
 

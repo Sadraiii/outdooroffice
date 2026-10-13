@@ -40,18 +40,18 @@ export function SheetHost() {
 }
 
 function CreateMenu() {
-  const { closeSheet, openSheet, isAdmin } = useApp();
-  const tiles: [string, string, 'trophy' | 'flag', () => void][] = [
-    ['Del træning', 'Løb, calisthenics, fitness … dem der følger dig får besked', 'trophy', () => openSheet({ type: 'workout' })],
-    ['Opret event', isAdmin ? 'Som OFFICIAL EVENT eller COMMUNITY MADE EVENT' : 'Bliver et COMMUNITY MADE EVENT, som alle kan tilmelde sig', 'flag', () => openSheet({ type: 'event' })],
+  const { closeSheet, openSheet } = useApp();
+  const tiles: [string, 'trophy' | 'flag', () => void][] = [
+    ['Del træning', 'trophy', () => openSheet({ type: 'workout' })],
+    ['Opret event', 'flag', () => openSheet({ type: 'event' })],
   ];
   return (
-    <Sheet title="Hvad vil du lave?" onClose={closeSheet}>
+    <Sheet title="Opret" onClose={closeSheet}>
       <div className="actions-grid">
-        {tiles.map(([t, s, i, fn]) => (
+        {tiles.map(([t, i, fn]) => (
           <button key={t} className="action-tile" onClick={fn}>
             <span className="ic-big"><Icon name={i} /></span>
-            <span><b>{t}</b><span>{s}</span></span>
+            <b>{t}</b>
           </button>
         ))}
       </div>
@@ -69,7 +69,7 @@ function PhotoPicker({ blob, setBlob }: { blob: Blob | null; setBlob: (b: Blob |
         <span className="btn btn-outline btn-sm file-btn"><Icon name="camera" />{blob ? 'Skift billede' : 'Tilføj billede'}
           <input type="file" accept="image/*" aria-label="Vælg billede" onChange={async (e) => {
             const f = e.target.files?.[0]; if (!f) return;
-            try { setErr(''); setBlob(await compressImage(f)); } catch { setErr('Billedet kunne ikke læses. Prøv et andet.'); }
+            try { setErr(''); setBlob(await compressImage(f)); } catch { setErr('Billedet kunne ikke læses'); }
           }} />
         </span>
         {blob && <button type="button" className="btn btn-quiet btn-sm" onClick={() => setBlob(null)}>Fjern</button>}
@@ -117,12 +117,12 @@ function WorkoutForm({ eventId }: { eventId?: string }) {
     if (!me) return;
     const distanceKm = metric === 'distance' ? parseNumber(km) : null;
     const durationSec = dur.trim() ? parseDuration(dur) : null;
-    if (dur.trim() && durationSec === null) { setErr('Skriv tiden som 42:10, 1:05:00 eller antal minutter.'); return; }
-    if (metric === 'distance' && (!distanceKm || distanceKm <= 0)) { setErr('Skriv distancen i km.'); return; }
-    if (distanceKm && distanceKm > 1000) { setErr('Distancen ser for lang ud. Skriv den i km.'); return; }
-    if (durationSec && durationSec > 48 * 3600) { setErr('Tiden ser for lang ud.'); return; }
+    if (dur.trim() && durationSec === null) { setErr('Skriv tiden som 42:10'); return; }
+    if (metric === 'distance' && (!distanceKm || distanceKm <= 0)) { setErr('Mangler distance'); return; }
+    if (distanceKm && distanceKm > 1000) { setErr('Distancen er for lang'); return; }
+    if (durationSec && durationSec > 48 * 3600) { setErr('Tiden er for lang'); return; }
     const lines: RepLine[] = metric === 'reps' ? reps.map((r) => ({ name: r.name.trim().slice(0, 40), count: Math.min(99999, parseNumber(r.count) || 0) })).filter((r) => r.name && r.count > 0).slice(0, 10) : [];
-    if (metric === 'reps' && !lines.length && !durationSec) { setErr('Skriv mindst én øvelse med antal.'); return; }
+    if (metric === 'reps' && !lines.length && !durationSec) { setErr('Tilføj mindst én øvelse'); return; }
     setBusy(true); setErr('');
     try {
       const photoURL = photo ? await api.uploadImage(me.id, 'activity', photo) : undefined;
@@ -131,9 +131,9 @@ function WorkoutForm({ eventId }: { eventId?: string }) {
         distanceKm: distanceKm || undefined, durationSec: durationSec || undefined, reps: lines.length ? lines : undefined,
         eventId: evId || undefined, photoURL,
       });
-      toast('Træningen er delt', { body: 'Dem der følger dig får besked.' });
+      toast('Delt');
       openSheet({ type: 'share-activity', activity: { id, uid: me.id, kind: 'workout', sport, title: title.trim() || placeholder, distanceKm: distanceKm || undefined, durationSec: durationSec || undefined, reps: lines, createdAt: Date.now(), kudos: 0, comments: 0 } as Activity });
-    } catch { setErr('Træningen blev ikke delt. Tjek forbindelsen og prøv igen.'); setBusy(false); }
+    } catch { setErr('Ikke delt. Prøv igen.'); setBusy(false); }
   };
 
   return (
@@ -163,11 +163,11 @@ function WorkoutForm({ eventId }: { eventId?: string }) {
           </fieldset>
         )}
         {metric !== 'distance' && (
-          <div className="field"><label htmlFor="w-dur2">Varighed</label><input id="w-dur2" inputMode="numeric" value={dur} placeholder="45 min eller 45:00" onChange={(e) => setDur(e.target.value)} /></div>
+          <div className="field"><label htmlFor="w-dur2">Varighed</label><input id="w-dur2" inputMode="numeric" value={dur} placeholder="45:00" onChange={(e) => setDur(e.target.value)} /></div>
         )}
-        <div className="field"><label htmlFor="w-text">Hvordan gik det?</label><textarea id="w-text" rows={2} maxLength={1000} value={text} placeholder="Fx tåge over havnen og helt stille" onChange={(e) => setText(e.target.value)} /></div>
+        <div className="field"><label htmlFor="w-text">Hvordan gik det?</label><textarea id="w-text" rows={2} maxLength={1000} value={text} onChange={(e) => setText(e.target.value)} /></div>
         <PhotoPicker blob={photo} setBlob={setPhoto} />
-        <EventSelect value={evId} onChange={setEvId} label="Fra et event" />
+        <EventSelect value={evId} onChange={setEvId} label="Event" />
         <p className="form-err" role="alert">{err}</p>
       </form>
     </Sheet>
@@ -185,13 +185,13 @@ function ProfileForm() {
   const preview = useMemo(() => (photo ? URL.createObjectURL(photo) : ''), [photo]);
   if (!me) return null;
   const save = async () => {
-    if (!name.trim()) { setErr('Skriv det navn, holdet skal se.'); return; }
+    if (!name.trim()) { setErr('Skriv dit navn'); return; }
     setBusy(true); setErr('');
     try {
       const photoURL = photo ? await api.uploadImage(me.id, 'avatar', photo) : undefined;
       await api.updateProfile(me.id, { name: name.trim().slice(0, 40), bio: bio.trim().slice(0, 200), instagram: cleanHandle(ig), ...(photoURL ? { photoURL } : {}) });
-      closeSheet(); toast('Profilen er gemt');
-    } catch { setErr('Profilen blev ikke gemt. Prøv igen.'); setBusy(false); }
+      closeSheet(); toast('Gemt');
+    } catch { setErr('Ikke gemt. Prøv igen.'); setBusy(false); }
   };
   return (
     <Sheet title="Rediger profil" onClose={closeSheet}
@@ -204,8 +204,8 @@ function ProfileForm() {
           </span>
         </div>
         <div className="field"><label htmlFor="pf-name">Navn</label><input id="pf-name" maxLength={40} value={name} autoComplete="nickname" onChange={(e) => setName(e.target.value)} /></div>
-        <div className="field"><label htmlFor="pf-ig">Instagram</label><input id="pf-ig" maxLength={60} value={ig} placeholder="@ditbrugernavn" autoCapitalize="none" autoCorrect="off" onChange={(e) => setIg(e.target.value)} /></div>
-        <div className="field"><label htmlFor="pf-bio">Om dig</label><textarea id="pf-bio" rows={3} maxLength={200} value={bio} placeholder="Fx calisthenics om onsdagen, løb i weekenden" onChange={(e) => setBio(e.target.value)} /></div>
+        <div className="field"><label htmlFor="pf-ig">Instagram</label><input id="pf-ig" maxLength={60} value={ig} placeholder="@brugernavn" autoCapitalize="none" autoCorrect="off" onChange={(e) => setIg(e.target.value)} /></div>
+        <div className="field"><label htmlFor="pf-bio">Om dig</label><textarea id="pf-bio" rows={3} maxLength={200} value={bio} onChange={(e) => setBio(e.target.value)} /></div>
         <p className="form-err" role="alert">{err}</p>
       </form>
     </Sheet>
@@ -226,13 +226,12 @@ function AppearanceSheet() {
           <b className="ap-title">Søndagsløb 8 km</b>
           <span className="ap-meta"><Icon name="clock" />I morgen kl. 09:00 · P-pladsen ved skoven</span>
           <div className="bar"><i style={{ width: '62%' }} /></div>
-          <div className="ap-row"><span className="btn btn-primary btn-sm">Jeg kommer</span><span className="link">Se program</span><span className="streak"><Icon name="flame" />7</span></div>
+          <div className="ap-row"><span className="btn btn-primary btn-sm">Tilmeld</span><span className="link">Program</span><span className="streak"><Icon name="flame" />7</span></div>
         </div>
         <fieldset><legend>Tema</legend>
           <div className="seg" role="radiogroup" aria-label="Tema" style={{ marginBottom: 0 }}>
             {MODES.map((m) => <button key={m.key} type="button" role="radio" aria-checked={a.mode === m.key} onClick={() => set({ mode: m.key })}>{m.label}</button>)}
           </div>
-          <p className="prog-note" style={{ marginTop: 10 }}>{a.mode === 'black' ? 'Helt sort baggrund. Flot på OLED-skærme og sparer strøm.' : a.mode === 'system' ? 'Lys om dagen og mørk om aftenen, hvis telefonen skifter.' : 'Gælder, uanset hvad telefonen er sat til.'}</p>
         </fieldset>
         <fieldset><legend>Farve</legend>
           <div className="accent-grid" role="radiogroup" aria-label="Farve">
@@ -243,7 +242,6 @@ function AppearanceSheet() {
               </div>
             ))}
           </div>
-          <p className="prog-note" style={{ marginTop: 12 }}>Farven bruges på knapper, links og markeringer, i en lysere udgave i mørkt tema.</p>
         </fieldset>
         <fieldset><legend>Tekststørrelse</legend>
           <div className="seg" role="radiogroup" aria-label="Tekststørrelse" style={{ marginBottom: 0 }}>
@@ -253,29 +251,27 @@ function AppearanceSheet() {
         <fieldset><legend>Mere</legend>
           <ul className="toggle-list">
             <li className="toggle-row">
-              <div><b>Høj kontrast</b><span>Mørkere tekst og tydeligere streger. Godt i skarpt sollys.</span></div>
+              <b>Høj kontrast</b>
               <Switch on={a.contrast} onChange={(v) => set({ contrast: v })} label="Høj kontrast" />
             </li>
             <li className="toggle-row">
-              <div><b>Animationer og konfetti</b><span>Fejring med konfetti, pulserende prikker og bløde overgange.</span></div>
-              <Switch on={a.motion} onChange={(v) => set({ motion: v })} label="Animationer og konfetti" />
+              <b>Animationer</b>
+              <Switch on={a.motion} onChange={(v) => set({ motion: v })} label="Animationer" />
             </li>
             <li className="toggle-row">
-              <div><b>Vibration</b><span>Små vibrationer, når du logger reps, checker ind og giver high five.{canVibrate() || DEMO ? '' : ' Din telefon understøtter det ikke.'}</span></div>
+              <div><b>Vibration</b>{!canVibrate() && !DEMO && <span>Ikke understøttet</span>}</div>
               <Switch on={a.haptics} onChange={(v) => { set({ haptics: v }); if (v) buzz(20); }} label="Vibration" />
             </li>
           </ul>
         </fieldset>
-        <p className="prog-note">Valgene gælder kun på denne telefon.{!isDefault && <> <button type="button" className="link" onClick={() => set({ ...DEFAULT_APPEARANCE })}><Icon name="refresh" />Nulstil</button></>}</p>
+        {!isDefault && <button type="button" className="link" onClick={() => set({ ...DEFAULT_APPEARANCE })}><Icon name="refresh" />Nulstil</button>}
       </div>
     </Sheet>
   );
 }
 
 type ShareKind = 'activity' | 'event' | 'recap' | 'badge';
-function shareText(kind: ShareKind) {
-  return kind === 'event' ? 'Kom med til træning med Outdoor Office' : kind === 'badge' ? 'Nyt mærke i Outdoor Office' : 'Fra Outdoor Office';
-}
+const SHARE_TEXT = 'Outdoor Office';
 const appUrl = (path: string) => (DEMO ? 'https://outdoor-office.web.app' : window.location.origin) + path;
 
 type ShareStyle = 'story' | 'clear';
@@ -301,11 +297,9 @@ interface ShareProps {
   make: (style: ShareStyle, look: ShareLook) => Promise<Blob>;
   parts: { key: string; label: string }[];
   link: { url: string; title: string };
-  storySub: string;
-  linkSub: string;
 }
 
-function ShareSheet({ title, kind, make, parts, link, storySub, linkSub }: ShareProps) {
+function ShareSheet({ title, kind, make, parts, link }: ShareProps) {
   const { closeSheet, toast } = useApp();
   const [style, setStyle] = useState<ShareStyle>(savedStyle);
   const [look, setLook] = useState<ShareLook>(savedLook);
@@ -345,27 +339,22 @@ function ShareSheet({ title, kind, make, parts, link, storySub, linkSub }: Share
   const share = async () => {
     if (!ready) return;
     if (DEMO) {
-      toast(clear ? 'På telefonen gemmer eller deler du stickeren her' : 'På telefonen åbner del-menuen her', { body: 'Vælg Instagram, eller gem billedet i dine fotos.' });
+      toast('Åbner del-menuen');
       return;
     }
-    const r = await shareImage(ready.blob, filename, shareText(kind));
-    if (r === 'downloaded') {
-      toast(clear ? 'Stickeren er gemt' : 'Billedet er gemt', {
-        body: clear ? 'Lav en story i Instagram, og tilføj stickeren fra dine fotos.' : 'Åbn Instagram, lav en story og vælg billedet.',
-      });
-    }
-    if (r === 'failed') toast('Billedet kunne ikke deles. Prøv igen.');
+    const r = await shareImage(ready.blob, filename, SHARE_TEXT);
+    if (r === 'downloaded') toast(clear ? 'Sticker gemt' : 'Billede gemt');
+    if (r === 'failed') toast('Kunne ikke dele');
     if (r === 'shared') closeSheet();
   };
   const copy = async () => {
     if (!ready) return;
-    if (DEMO) { toast('På telefonen kopieres stickeren her', { body: 'Åbn din Instagram-story og sæt den ind oven på dit billede.' }); return; }
-    if (await copyImage(ready.blob)) toast('Stickeren er kopieret', { body: 'Åbn Instagram, vælg dit billede til en story og sæt stickeren ind.' });
-    else toast('Kopiering virker ikke her', { body: 'Brug Gem eller del sticker i stedet.' });
+    if (DEMO || await copyImage(ready.blob)) toast('Sticker kopieret');
+    else toast('Kopiering virker ikke her');
   };
   const sendLink = async () => {
-    const r = await shareLink(link.url, link.title, shareText(kind));
-    if (r === 'copied') toast('Linket er kopieret');
+    const r = await shareLink(link.url, link.title, SHARE_TEXT);
+    if (r === 'copied') toast('Link kopieret');
     if (r === 'shared' || r === 'copied') closeSheet();
   };
 
@@ -383,11 +372,8 @@ function ShareSheet({ title, kind, make, parts, link, storySub, linkSub }: Share
         <div className={'story-frame' + (clear ? ' clear' : '') + (clear && (ready ? ready.key.startsWith('clear|black') : look.color === 'black') ? ' light' : '')}>
           {ready
             ? <img src={ready.url} alt={clear ? 'Gennemsigtig sticker' : 'Story-billede'} />
-            : <div className="story-wait">{failed ? 'Billedet kunne ikke laves.' : 'Laver billede …'}</div>}
+            : <div className="story-wait">{failed ? 'Billedet kunne ikke laves' : 'Laver billede …'}</div>}
         </div>
-        <figcaption className="muted small">
-          {clear ? 'Dine tal uden baggrund, ligesom på Strava. Læg dem oven på dit eget billede i din Instagram-story.' : 'Et færdigt story-billede. Tryk del, og vælg Instagram.'}
-        </figcaption>
       </figure>
       <div className="share-opts">
         <div className="opt-row">
@@ -413,17 +399,17 @@ function ShareSheet({ title, kind, make, parts, link, storySub, linkSub }: Share
       <div className="actions-grid">
         <button className="action-tile" onClick={share} disabled={!ready}>
           <span className="ic-big"><Icon name={clear ? 'sticker' : 'insta'} /></span>
-          <span><b>{clear ? 'Gem eller del sticker' : 'Del som story'}</b><span>{clear ? 'Gem den i dine fotos, eller send den videre' : storySub}</span></span>
+          <b>{clear ? 'Del sticker' : 'Del story'}</b>
         </button>
         {clear && (DEMO || canCopyImage()) && (
           <button className="action-tile" onClick={copy} disabled={!ready}>
             <span className="ic-big"><Icon name="copy" /></span>
-            <span><b>Kopiér sticker</b><span>Sæt den ind i din Instagram-story</span></span>
+            <b>Kopiér sticker</b>
           </button>
         )}
         <button className="action-tile" onClick={sendLink}>
           <span className="ic-big"><Icon name="link" /></span>
-          <span><b>Send link</b><span>{linkSub}</span></span>
+          <b>Send link</b>
         </button>
       </div>
     </Sheet>
@@ -433,19 +419,17 @@ function ShareSheet({ title, kind, make, parts, link, storySub, linkSub }: Share
 function ShareActivity({ a }: { a: Activity }) {
   const { nameOf } = useApp();
   return (
-    <ShareSheet title="Del træningen" kind="activity" parts={activityParts(a)}
+    <ShareSheet title="Del træning" kind="activity" parts={activityParts(a)}
       make={(s, look) => (s === 'clear' ? activitySticker(a, look) : activityStory(a, nameOf(a.uid), look.bg))}
-      link={{ url: appUrl(`/a/${a.id}`), title: a.title || 'Træning' }}
-      storySub="Et billede med dine tal, klar til Instagram" linkSub="Til en ven i Messenger, SMS eller WhatsApp" />
+      link={{ url: appUrl(`/a/${a.id}`), title: a.title || 'Træning' }} />
   );
 }
 
 function ShareEvent({ ev }: { ev: EventDoc }) {
   return (
-    <ShareSheet title="Del eventet" kind="event" parts={eventParts(ev)}
+    <ShareSheet title="Del event" kind="event" parts={eventParts(ev)}
       make={(s, look) => (s === 'clear' ? eventSticker(ev, ev.goingCount, look) : eventStory(ev, ev.goingCount, look.bg))}
-      link={{ url: appUrl(`/e/${ev.id}`), title: ev.title }}
-      storySub="Invitation med tid og sted til Instagram" linkSub="Så andre kan tilmelde sig" />
+      link={{ url: appUrl(`/e/${ev.id}`), title: ev.title }} />
   );
 }
 
@@ -477,24 +461,22 @@ function ShareRecap({ ev }: { ev: EventDoc }) {
   return (
     <ShareSheet title="Recap" kind="recap" parts={recapParts(data)}
       make={(s2, look) => (s2 === 'clear' ? recapSticker(ev, data, look) : recapStory(ev, data, look.bg))}
-      link={{ url: appUrl(`/e/${ev.id}`), title: ev.title }}
-      storySub="Fremmøde, holdets tal, vejret og billederne" linkSub="Linket til eventet" />
+      link={{ url: appUrl(`/e/${ev.id}`), title: ev.title }} />
   );
 }
 
 function LoadingShare({ title }: { title: string }) {
   const { closeSheet } = useApp();
-  return <Sheet title={title} onClose={closeSheet}><p className="muted">Laver billedet …</p><Skeleton /></Sheet>;
+  return <Sheet title={title} onClose={closeSheet}><Skeleton /></Sheet>;
 }
 
 function ShareBadge({ id, uid }: { id: string; uid: string }) {
   const { users, nameOf } = useApp();
   const at = users.get(uid)?.badges?.[id] || Date.now();
   return (
-    <ShareSheet title="Del dit mærke" kind="badge" parts={badgeParts}
+    <ShareSheet title="Del mærke" kind="badge" parts={badgeParts}
       make={(s2, look) => (s2 === 'clear' ? badgeSticker(id, look) : badgeStory(id, nameOf(uid), at, look.bg))}
-      link={{ url: appUrl(`/u/${uid}`), title: badgeById(id)?.name || 'Mærke' }}
-      storySub="Mærket som story til Instagram" linkSub="Linket til din profil" />
+      link={{ url: appUrl(`/u/${uid}`), title: badgeById(id)?.name || 'Mærke' }} />
   );
 }
 
@@ -506,7 +488,7 @@ function NudgeSheet({ uid }: { uid: string }) {
   const first = (n: string | undefined) => (n || '').split(' ')[0];
   const draft = (eid: string) => {
     const e = upcoming.find((x) => x.id === eid);
-    return `Hej ${first(u?.name)}! Vi savner dig til træning. ${e ? `Kom og vær med ${whenText(e)}: ${e.title}.` : 'Kom og vær med igen snart.'} Vi glæder os til at se dig. Hilsen ${first(me?.name)}`;
+    return `Hej ${first(u?.name)}, vi savner dig til træning.${e ? ` Kom med ${whenText(e)}: ${e.title}.` : ''} ${first(me?.name)}`;
   };
   const [text, setText] = useState(() => draft(eventId));
   const [edited, setEdited] = useState(false);
@@ -520,15 +502,15 @@ function NudgeSheet({ uid }: { uid: string }) {
     try {
       await api.sendNudge(me.id, uid, text, eventId || undefined);
       closeSheet();
-      toast('Hilsenen er sendt', { body: `${first(u.name)} får den som besked på telefonen.` });
-    } catch { toast('Hilsenen blev ikke sendt. Prøv igen.'); setBusy(false); }
+      toast('Sendt');
+    } catch { toast('Ikke sendt. Prøv igen.'); setBusy(false); }
   };
   return (
     <Sheet title="Send en hilsen" onClose={closeSheet}
       foot={<><button className="btn btn-outline" onClick={closeSheet}>Annullér</button><button className="btn btn-primary btn-grow" disabled={busy || !text.trim()} onClick={send}><Icon name="megaphone" />Send hilsen</button></>}>
       <div className="nudge-to">
         <Avatar uid={uid} size="md" />
-        <div><b>{u.name}</b><span>{away === null ? 'Har ikke været til træning endnu' : `Sidst til træning ${u.stats?.lastDate ? fmtDay(u.stats.lastDate) : ''} · for ${away} uger siden`}</span></div>
+        <div><b>{u.name}</b><span>{away === null ? 'Aldrig checket ind' : `Sidst ${u.stats?.lastDate ? fmtDay(u.stats.lastDate) : ''} · ${away} uger siden`}</span></div>
       </div>
       <div className="field" style={{ marginTop: 14 }}>
         <label htmlFor="n-event">Inviter til</label>
@@ -541,13 +523,12 @@ function NudgeSheet({ uid }: { uid: string }) {
         <label htmlFor="n-text">Besked</label>
         <textarea id="n-text" rows={4} maxLength={300} value={text} onChange={(e) => { setText(e.target.value); setEdited(true); }} />
       </div>
-      <p className="flabel" style={{ marginTop: 16 }}>Sådan ser den ud på telefonen</p>
+      <p className="flabel" style={{ marginTop: 16 }}>Forhåndsvisning</p>
       <div className="push-preview">
         <span className="seal" aria-hidden="true" />
         <div><b>{shownName(me.id) === 'Du' ? me.name : shownName(me.id)}: Vi savner dig til træning</b><p>{text || ' '}</p></div>
         <time>nu</time>
       </div>
-      <p className="small muted" style={{ marginTop: 10 }}>Hver person får højst én hilsen om ugen, uanset hvem der sender den.</p>
     </Sheet>
   );
 }

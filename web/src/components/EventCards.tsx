@@ -22,9 +22,9 @@ export function useRsvp() {
     const waiting = on && isFull(ev);
     try {
       await api.setRsvp(ev.id, me.id, on);
-      if (on) toast(waiting ? 'Du er på ventelisten' : 'Du er tilmeldt. Vi ses!', { body: waiting ? 'Du får besked, så snart der bliver en plads.' : 'Dem der følger dig får besked.' });
+      if (on) toast(waiting ? 'Du er på ventelisten' : 'Du er tilmeldt');
       else toast(before === 'waiting' ? 'Du er taget af ventelisten' : 'Du er afmeldt');
-    } catch { toast(signupClosed(ev) ? 'Tilmeldingen er lukket' : 'Tilmeldingen blev ikke gemt. Prøv igen.'); }
+    } catch { toast(signupClosed(ev) ? 'Tilmeldingen er lukket' : 'Ikke gemt. Prøv igen.'); }
   };
 }
 
@@ -94,47 +94,43 @@ export function SignupPanel({ ev, onPeople }: { ev: EventDoc; onPeople: () => vo
   const join = () => rsvp(ev);
   const leave = () => { if (confirm()) rsvp(ev); };
   const toCalendar = () => document.querySelector('.cal')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  const joinLabel = full ? 'Skriv mig på venteliste' : 'Tilmeld mig';
+  const joinLabel = full ? 'Venteliste' : 'Tilmeld';
   return (
     <section className={'signup' + (p.state === 'going' ? ' is-going' : '')} aria-label="Tilmelding">
       <div className="su-head">
         <button type="button" className="su-people" onClick={onPeople}>
           <AvatarStack uids={p.going} max={5} size="xs" />
-          <span>{going ? <><b>{going}</b>{ev.capacity ? ` af ${ev.capacity}` : ''} kommer</> : 'Ingen tilmeldt endnu'}</span>
+          <span>{going ? <><b>{going}</b>{ev.capacity ? ` af ${ev.capacity}` : ''} kommer</> : 'Ingen tilmeldt'}</span>
         </button>
         {ev.capacity && !ev.cancelled && <span className={'su-left' + (full ? ' full' : left <= 3 ? ' few' : '')}>{full ? `Fuldt${p.waitlist.length ? ` · ${p.waitlist.length} venter` : ''}` : `${left} ${left === 1 ? 'plads' : 'pladser'} tilbage`}</span>}
       </div>
       {ev.capacity && !ev.cancelled && <div className="seat-meter" aria-hidden="true"><i style={{ width: `${Math.min(100, (going / ev.capacity) * 100)}%` }} /></div>}
       {ev.cancelled ? (
-        <button className="su-big" disabled><Icon name="ban" />Eventet er aflyst</button>
+        <button className="su-big" disabled><Icon name="ban" />Aflyst</button>
       ) : p.state === 'going' ? (
         <>
           <div className="su-big su-big-on" role="status"><span className="su-tick"><Icon name="check" /></span>Du er tilmeldt</div>
           <div className="su-more">
             <button type="button" className="link" onClick={toCalendar}><Icon name="calplus" />Læg i kalenderen</button>
-            <button type="button" className={'link' + (armed ? ' danger' : '')} onClick={leave}>{armed ? 'Tryk igen for at afmelde' : 'Afmeld'}</button>
+            <button type="button" className={'link' + (armed ? ' danger' : '')} onClick={leave}>{armed ? 'Afmeld?' : 'Afmeld'}</button>
           </div>
         </>
       ) : p.state === 'waiting' ? (
         <>
-          <div className="su-big su-big-wait" role="status"><Icon name="clock" />Du er nr. {p.pos} på ventelisten</div>
+          <div className="su-big su-big-wait" role="status"><Icon name="clock" />Nr. {p.pos} på venteliste</div>
           <div className="su-more">
-            <span className="muted">Du rykker automatisk ind og får besked, hvis der bliver en plads.</span>
-            <button type="button" className={'link' + (armed ? ' danger' : '')} onClick={leave}>{armed ? 'Tryk igen' : 'Forlad ventelisten'}</button>
+            <button type="button" className={'link' + (armed ? ' danger' : '')} onClick={leave}>{armed ? 'Forlad?' : 'Forlad venteliste'}</button>
           </div>
         </>
       ) : closed ? (
-        <button className="su-big" disabled>Tilmeldingen er lukket</button>
+        <button className="su-big" disabled>Lukket</button>
       ) : (
-        <>
-          <button ref={big} className={'su-big su-big-go' + (full ? ' su-big-line' : '')} onClick={join}><Icon name={full ? 'clock' : 'plus'} />{joinLabel}</button>
-          {full && <p className="su-note">Eventet er fuldt. Melder nogen fra, rykker du ind og får besked.</p>}
-        </>
+        <button ref={big} className={'su-big su-big-go' + (full ? ' su-big-line' : '')} onClick={join}><Icon name={full ? 'clock' : 'plus'} />{joinLabel}</button>
       )}
       {away && canJoin && (
         <div className="su-dock">
           <span><b>{ev.title}</b>{ev.capacity && !full ? `${left} ${left === 1 ? 'plads' : 'pladser'} tilbage` : `${going} kommer`}</span>
-          <button className={'su-big su-big-go' + (full ? ' su-big-line' : '')} onClick={join}><Icon name={full ? 'clock' : 'plus'} />{full ? 'Venteliste' : 'Tilmeld mig'}</button>
+          <button className={'su-big su-big-go' + (full ? ' su-big-line' : '')} onClick={join}><Icon name={full ? 'clock' : 'plus'} />{joinLabel}</button>
         </div>
       )}
     </section>
@@ -163,30 +159,30 @@ export function EventHero({ ev, label = 'Næste event' }: { ev: EventDoc; label?
         <div className="hero-text">
           <div className="tags"><EventBadge ev={ev} /><SportChip ev={ev} /></div>
           <h2 className="hero-title">{ev.title}</h2>
-          <p className="meta"><Icon name="clock" /><span>{cap(relDay(ev))}{ev.time ? ` kl. ${ev.time}` : ', tid ikke sat'}</span><WeatherChip ev={ev} /></p>
-          <p className="meta"><Icon name="pin" /><span>{ev.place || 'Sted ikke sat'}</span></p>
+          <p className="meta"><Icon name="clock" /><span>{cap(relDay(ev))}{ev.time ? ` kl. ${ev.time}` : ''}</span><WeatherChip ev={ev} /></p>
+          {ev.place && <p className="meta"><Icon name="pin" /><span>{ev.place}</span></p>}
         </div>
       </div>
       <div className="hero-people">
         <AvatarStack uids={here.length ? here : att} max={6} />
         {here.length
           ? <span className="here-now"><i className="here-pulse" aria-hidden="true" /><b>{here.length} her nu</b>{att.length ? ` · ${att.length} tilmeldt` : ''}</span>
-          : <span>{att.length ? `${att.length} kommer` : 'Ingen tilmeldt endnu'}{seats ? ` · ${seats}` : ''}</span>}
+          : <span>{att.length ? `${att.length} kommer` : 'Ingen tilmeldt'}{seats ? ` · ${seats}` : ''}</span>}
         {ev.coachId && <span className="coach-mini"><Icon name="watch" />{shownName(ev.coachId)}</span>}
       </div>
       <div className="hero-actions">
         {ev.cancelled ? (
-          <button className="btn btn-outline" onClick={(e) => { e.stopPropagation(); open(); }}>Se hvorfor<Icon name="chev" /></button>
+          <button className="btn btn-outline" onClick={(e) => { e.stopPropagation(); open(); }}>Se mere<Icon name="chev" /></button>
         ) : on ? (
           <>
-            {mine && ev.exercises.length > 0 && <button className="btn btn-primary" onClick={(e) => { e.stopPropagation(); open(); }}>Log dine reps<Icon name="chev" /></button>}
+            {mine && ev.exercises.length > 0 && <button className="btn btn-primary" onClick={(e) => { e.stopPropagation(); open(); }}>Log reps<Icon name="chev" /></button>}
             <CheckinButton ev={ev} mine={mine} />
             {!mine && <button className="btn btn-outline" onClick={(e) => { e.stopPropagation(); open(); }}>{ev.exercises.length ? 'Program' : 'Detaljer'}<Icon name="chev" /></button>}
           </>
         ) : (
           <>
             <SignupButton ev={ev} />
-            <button className="btn btn-outline" onClick={(e) => { e.stopPropagation(); open(); }}>{ev.exercises.length ? 'Se program' : 'Detaljer'}<Icon name="chev" /></button>
+            <button className="btn btn-outline" onClick={(e) => { e.stopPropagation(); open(); }}>{ev.exercises.length ? 'Program' : 'Detaljer'}<Icon name="chev" /></button>
           </>
         )}
       </div>
@@ -238,7 +234,7 @@ export function EventSlot({ ev, preview }: { ev: EventDoc; preview?: boolean }) 
         <div className="slot-info">
           {host && <p className="slot-who">{ev.official ? 'Coach' : 'Arrangør'}: {preview ? 'Dig' : shownName(host)}</p>}
           <h3 className="slot-title">{ev.title}</h3>
-          <p className="slot-place">{ev.place || (preview ? 'Sted' : 'Sted ikke sat')}{ev.title.trim().toLowerCase() !== sportLabel(ev.sport).toLowerCase() && <span className="slot-sport"> · {sportLabel(ev.sport)}</span>}</p>
+          <p className="slot-place">{ev.place || (preview ? 'Sted' : '')}{ev.title.trim().toLowerCase() !== sportLabel(ev.sport).toLowerCase() && <span className="slot-sport">{ev.place || preview ? ' · ' : ''}{sportLabel(ev.sport)}</span>}</p>
         </div>
         <div className="slot-time" aria-hidden="true">{ev.time ? <><b>{ev.time}</b>{end && <span>{end}</span>}</> : <><b className="allday">Hele</b><span>dagen</span></>}</div>
         <i className="slot-bar" aria-hidden="true" />
@@ -249,7 +245,7 @@ export function EventSlot({ ev, preview }: { ev: EventDoc; preview?: boolean }) 
             {here.length
               ? <><AvatarStack uids={here} max={4} size="xs" /><span className="here-now"><i className="here-pulse" aria-hidden="true" /><b>{here.length} her nu</b></span></>
               : att.length ? <><AvatarStack uids={att} max={4} size="xs" /><span>{att.length} {past ? 'deltog' : 'kommer'}</span></>
-              : <span className="muted">{past ? 'Ingen deltog' : 'Vær den første'}</span>}
+              : <span className="muted">{past ? 'Ingen deltog' : 'Ingen tilmeldt'}</span>}
             {past && ev.photoCount > 0 && <span className="t-photos"><Icon name="camera" />{ev.photoCount}</span>}
           </div>
           {live ? <CheckinButton ev={ev} mine={mine} /> : <SignupButton ev={ev} />}

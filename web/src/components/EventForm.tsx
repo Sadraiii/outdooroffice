@@ -104,35 +104,35 @@ export function EventForm({ event }: { event?: EventDoc }) {
   const pickAddress = (a: AddressHit) => { setPlace(placeText(a)); setGeo({ name: (a.town || a.name).slice(0, 60), lat: a.lat, lon: a.lon }); };
 
   const check = (upTo: Step): { step: Step; msg: string; exercises?: Exercise[]; cap?: number | null; until?: number | null } | null => {
-    if (!dateOf(date)) return { step: 0, msg: 'Vælg en dato.' };
+    if (!dateOf(date)) return { step: 0, msg: 'Vælg en dato' };
     const year = Number(date.slice(0, 4)), thisYear = new Date().getFullYear();
-    if (year < thisYear - 1 || year > thisYear + 2) return { step: 0, msg: 'Vælg en dato inden for de næste par år.' };
-    if (isNew && date < todayStr()) return { step: 0, msg: 'Datoen er passeret. Vælg i dag eller senere.' };
-    if (timeMode === 'time' && !/^\d{1,2}:\d{2}$/.test(time)) return { step: 0, msg: 'Skriv et tidspunkt, fx 17:30.' };
+    if (year < thisYear - 1 || year > thisYear + 2) return { step: 0, msg: 'Ugyldig dato' };
+    if (isNew && date < todayStr()) return { step: 0, msg: 'Datoen er passeret' };
+    if (timeMode === 'time' && !/^\d{1,2}:\d{2}$/.test(time)) return { step: 0, msg: 'Vælg et tidspunkt' };
     if (upTo === 0) return null;
     const exercises: Exercise[] = [];
     if (hasProgram) {
       for (const r of rows) {
         const name = r.name.trim(); const raw = parseNumber(r.target);
         if (!name && !r.target.trim()) continue;
-        if (!name) return { step: 1, msg: 'Giv hver øvelse et navn.' };
+        if (!name) return { step: 1, msg: 'Øvelsen mangler et navn' };
         const target = raw ? Math.round(raw * 100) / 100 : 0;
-        if (!target || target <= 0) return { step: 1, msg: `Sæt et mål for ${name}.` };
-        if (target > 99999) return { step: 1, msg: `Målet for ${name} er for stort.` };
+        if (!target || target <= 0) return { step: 1, msg: `${name} mangler et mål` };
+        if (target > 99999) return { step: 1, msg: `${name}: målet er for stort` };
         exercises.push({ id: r.id, name: name.slice(0, 40), target, unit: r.unit });
       }
-      if (exercises.length > 8) return { step: 1, msg: 'Et program kan højst have 8 øvelser.' };
+      if (exercises.length > 8) return { step: 1, msg: 'Højst 8 øvelser' };
     }
     if (upTo === 1) return null;
     const c = capOn ? Math.round(parseNumber(capN) || 0) : null;
-    if (capOn && (!c || c < 1 || c > 5000)) return { step: 2, msg: 'Skriv et antal pladser mellem 1 og 5000.' };
-    if (event && c && c < event.going.length && (!event.capacity || c < event.capacity)) return { step: 2, msg: `${event.going.length} er allerede tilmeldt, så der skal være mindst ${event.going.length} pladser.` };
+    if (capOn && (!c || c < 1 || c > 5000)) return { step: 2, msg: 'Pladser skal være 1–5000' };
+    if (event && c && c < event.going.length && (!event.capacity || c < event.capacity)) return { step: 2, msg: `Mindst ${event.going.length} pladser` };
     const until = deadlineOf(deadline, date, effTime, untilDate, untilTime);
-    if (deadline !== 'none' && until === null) return { step: 2, msg: 'Vælg en dato for, hvornår tilmeldingen lukker.' };
+    if (deadline !== 'none' && until === null) return { step: 2, msg: 'Vælg en frist' };
     if (until !== null) {
       const start = new Date(`${date}T${effTime || '23:59'}`).getTime();
-      if (until > start) return { step: 2, msg: 'Tilmeldingen skal lukke, før eventet starter. Vælg et tidligere tidspunkt.' };
-      if (isNew && until <= Date.now()) return { step: 2, msg: 'Fristen for tilmelding er allerede passeret. Vælg en senere frist.' };
+      if (until > start) return { step: 2, msg: 'Fristen skal være før start' };
+      if (isNew && until <= Date.now()) return { step: 2, msg: 'Fristen er passeret' };
     }
     return { step: 2, msg: '', exercises, cap: c, until };
   };
@@ -161,7 +161,7 @@ export function EventForm({ event }: { event?: EventDoc }) {
         try { await api.addEventPhoto(eventId, me.id, newPhotos[i], true); } catch { failed++; }
       }
       setProgress('');
-      if (failed) toast(`${failed} billede${failed > 1 ? 'r' : ''} blev ikke lagt op`, { body: 'Prøv igen under Billeder på eventet.' });
+      if (failed) toast(`${failed} billede${failed > 1 ? 'r' : ''} ikke lagt op`);
     };
     setBusy(true); setErr('');
     try {
@@ -170,32 +170,31 @@ export function EventForm({ event }: { event?: EventDoc }) {
         const seriesId = newId('s');
         for (let i = 1; i <= repeat; i++) { const d = dateOf(date)!; d.setDate(d.getDate() + 7 * i); await api.createEvent(me.id, { ...data, signupUntil: shifted(i), official: isAdmin ? data.official : false, date: ymd(d), coachId: isAdmin ? event.coachId : me.id, seriesId, seriesIndex: i }); }
         await upload(event.id);
-        closeSheet(); toast(repeat ? `Gemt og kopieret til ${repeat} uger mere` : 'Ændringerne er gemt');
+        closeSheet(); toast(repeat ? `Gemt og kopieret ${repeat} uger frem` : 'Gemt');
       } else {
         let first = '';
         const seriesId = repeat > 1 ? newId('s') : undefined;
         for (let i = 0; i < Math.max(1, repeat); i++) { const d = dateOf(date)!; d.setDate(d.getDate() + 7 * i); const id = await api.createEvent(me.id, { ...data, signupUntil: shifted(i), date: ymd(d), ...(seriesId ? { seriesId, seriesIndex: i } : {}) }); if (!first) first = id; }
         await upload(first);
         closeSheet();
-        toast(repeat > 1 ? `${repeat} events er oprettet` : 'Eventet er oprettet', { body: data.official ? 'Hele holdet får besked.' : 'Dem der følger dig får besked.' });
+        toast(repeat > 1 ? `${repeat} events oprettet` : 'Event oprettet');
         nav(`/e/${first}`);
       }
-    } catch { setErr('Eventet blev ikke gemt. Tjek forbindelsen og prøv igen.'); setBusy(false); setProgress(''); }
+    } catch { setErr('Ikke gemt. Prøv igen.'); setBusy(false); setProgress(''); }
   };
   const setCancelled = async (on: boolean) => {
     if (!event || !me) return;
     setBusy(true); setErr('');
     try {
       await api.setCancelled(event.id, me.id, on, cancelNote);
-      const told = event.going.length + event.waitlist.length > (event.going.includes(me.id) ? 1 : 0);
       closeSheet();
-      toast(on ? 'Eventet er aflyst' : 'Eventet er genåbnet', { body: told ? 'Alle tilmeldte har fået besked.' : on ? 'Ingen var tilmeldt endnu.' : 'Folk kan tilmelde sig igen.' });
-    } catch { setErr(on ? 'Eventet blev ikke aflyst. Prøv igen.' : 'Eventet blev ikke genåbnet. Prøv igen.'); setBusy(false); }
+      toast(on ? 'Aflyst' : 'Genåbnet');
+    } catch { setErr('Det lykkedes ikke. Prøv igen.'); setBusy(false); }
   };
   const remove = async () => {
     if (!event) return;
     if (!confirmDel) { setConfirmDel(true); return; }
-    try { await api.deleteEvent(event.id); closeSheet(); nav('/events'); toast('Eventet er slettet'); } catch { setErr('Eventet blev ikke slettet.'); }
+    try { await api.deleteEvent(event.id); closeSheet(); nav('/events'); toast('Slettet'); } catch { setErr('Ikke slettet'); }
   };
 
   const show = (s: Step) => !isNew || step === s;
@@ -218,7 +217,7 @@ export function EventForm({ event }: { event?: EventDoc }) {
       {isNew && (
         <div className="wiz-head" aria-label={`Trin ${step + 1} af 3: ${STEPS[step]}`}>
           <ol className="wiz-bar" aria-hidden="true">{STEPS.map((s, i) => <li key={s} className={i <= step ? 'on' : ''} />)}</ol>
-          <p><b>{STEPS[step]}</b><span>Trin {step + 1} af 3</span></p>
+          <p><b>{STEPS[step]}</b><span>{step + 1}/3</span></p>
         </div>
       )}
       <form className="form ev-form" onSubmit={(e) => { e.preventDefault(); (document.activeElement as HTMLElement | null)?.blur(); }}>
@@ -227,11 +226,11 @@ export function EventForm({ event }: { event?: EventDoc }) {
             {!isNew && <h3 className="form-sec">Hvad og hvornår</h3>}
             {isAdmin ? (
               <div className="toggle-line">
-                <div><b>{official ? 'OFFICIAL EVENT' : 'COMMUNITY MADE EVENT'}</b><span>{official ? 'Fra Outdoor Office. Hele holdet får besked.' : 'Vises som community-event. Dem der følger dig får besked.'}</span></div>
+                <b>{official ? 'OFFICIAL EVENT' : 'COMMUNITY MADE EVENT'}</b>
                 <Switch on={official} onChange={setOfficial} label="Officielt event" />
               </div>
             ) : null}
-            <fieldset><legend>Hvad skal I lave?</legend>
+            <fieldset><legend>Sport</legend>
               <div className="sport-grid">
                 {SPORT_ORDER.map((s) => (
                   <button type="button" key={s} className="sport-tile" aria-pressed={sport === s} onClick={() => pickSport(s)}>
@@ -240,7 +239,7 @@ export function EventForm({ event }: { event?: EventDoc }) {
                 ))}
               </div>
             </fieldset>
-            <div className="field"><label htmlFor="f-title">Navn på eventet</label>
+            <div className="field"><label htmlFor="f-title">Navn</label>
               <input id="f-title" maxLength={60} value={title} placeholder={suggested} onChange={(e) => setTitle(e.target.value)} autoComplete="off" enterKeyHint="done" />
             </div>
             <fieldset><legend>Dag</legend>
@@ -282,11 +281,11 @@ export function EventForm({ event }: { event?: EventDoc }) {
             {!isNew && <h3 className="form-sec">Sted og program</h3>}
             <AddressField value={place} onChange={setPlace} onPick={pickAddress} recent={recentPlaces} near={geo || team.weather} />
             <PlacePicker value={geo} onChange={setGeo} fallback={team.weather} />
-            <div className="field"><label htmlFor="f-note">Besked til deltagerne</label><textarea id="f-note" rows={2} maxLength={500} value={note} placeholder="Fx tag handsker med til pull-ups" onChange={(e) => setNote(e.target.value)} /></div>
+            <div className="field"><label htmlFor="f-note">Note</label><textarea id="f-note" rows={2} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} /></div>
             {sport !== 'socialt' && (
               <fieldset>
                 <div className="toggle-line plain">
-                  <div><b>Program</b><span>{hasProgram ? 'Deltagerne logger deres reps mod målet, og holdet følger med live.' : 'Uden program kan folk stadig tilmelde sig og checke ind.'}</span></div>
+                  <b>Program</b>
                   <Switch on={hasProgram} onChange={(v) => { setWithProgram(v); setTouched(true); if (v && !rows.length) setRows(tplFor(sport).length ? tplFor(sport) : [{ id: newId('x'), name: '', target: '', unit: 'reps' }]); }} label="Program" />
                 </div>
                 {hasProgram && (
@@ -304,8 +303,7 @@ export function EventForm({ event }: { event?: EventDoc }) {
                 )}
               </fieldset>
             )}
-            <fieldset><legend>Billeder (valgfrit)</legend>
-              <p className="prog-note">Vises øverst på eventet, så folk kan se, hvad de melder sig til.{event && event.photoCount ? ` Eventet har ${event.photoCount} billede${event.photoCount > 1 ? 'r' : ''}; dem sletter du under Billeder.` : ''}</p>
+            <fieldset><legend>Billeder</legend>
               <MultiPhotoPicker blobs={newPhotos} setBlobs={setNewPhotos} />
             </fieldset>
           </>
@@ -316,8 +314,8 @@ export function EventForm({ event }: { event?: EventDoc }) {
             {!isNew && <h3 className="form-sec">Hvem kan komme</h3>}
             <fieldset>
               <div className="toggle-line plain">
-                <div><b>Begræns antal pladser</b><span>{capOn ? 'Når eventet er fuldt, kommer nye på venteliste og rykker ind, hvis nogen melder fra.' : 'Alle kan tilmelde sig.'}</span></div>
-                <Switch on={capOn} onChange={setCapOn} label="Begræns antal pladser" />
+                <b>Begræns pladser</b>
+                <Switch on={capOn} onChange={setCapOn} label="Begræns pladser" />
               </div>
               {capOn && (
                 <div className="stepper" role="group" aria-label="Antal pladser">
@@ -328,8 +326,8 @@ export function EventForm({ event }: { event?: EventDoc }) {
                 </div>
               )}
             </fieldset>
-            <fieldset><legend>Tilmeldingen lukker</legend>
-              <div className="time-chips" role="radiogroup" aria-label="Tilmeldingen lukker">
+            <fieldset><legend>Tilmelding lukker</legend>
+              <div className="time-chips" role="radiogroup" aria-label="Tilmelding lukker">
                 <button type="button" role="radio" className="choice" aria-checked={deadline === 'none'} onClick={() => setDeadline('none')}>Når det starter</button>
                 {timeMode === 'time' && <button type="button" role="radio" className="choice" aria-checked={deadline === 'hour'} onClick={() => setDeadline('hour')}>1 time før</button>}
                 <button type="button" role="radio" className="choice" aria-checked={deadline === 'evening'} onClick={() => setDeadline('evening')}>Aftenen før kl. 20</button>
@@ -342,26 +340,27 @@ export function EventForm({ event }: { event?: EventDoc }) {
                 </div>
               )}
             </fieldset>
-            <fieldset><legend>Billeder fra deltagerne</legend>
-              <div className="choices sm" role="radiogroup" aria-label="Billeder fra deltagerne">
+            <fieldset><legend>Deltagerbilleder</legend>
+              <div className="choices sm" role="radiogroup" aria-label="Deltagerbilleder">
                 <button type="button" className="choice" role="radio" aria-checked={photoPolicy === 'all'} onClick={() => setPhotoPolicy('all')}>Alle kan dele</button>
-                <button type="button" className="choice" role="radio" aria-checked={photoPolicy === 'host'} onClick={() => setPhotoPolicy('host')}>Kun arrangørerne</button>
+                <button type="button" className="choice" role="radio" aria-checked={photoPolicy === 'host'} onClick={() => setPhotoPolicy('host')}>Kun arrangører</button>
               </div>
             </fieldset>
-            <fieldset><legend>Medarrangører (valgfrit)</legend>
-              <CohostPicker value={cohosts} onChange={setCohosts} owner={owner} locked={cohostsLocked} />
-            </fieldset>
-            <fieldset><legend>{isNew ? 'Gentag' : 'Kopiér til de næste uger'}</legend>
-              <div className="choices sm" role="radiogroup" aria-label={isNew ? 'Gentag' : 'Kopiér til de næste uger'}>
-                {(isNew ? [[1, 'Kun denne gang'], [4, 'Hver uge i 4 uger'], [8, '8 uger'], [12, '12 uger']] as const : [[0, 'Ingen kopier'], [4, '4 uger'], [8, '8 uger'], [12, '12 uger']] as const).map(([v, l]) => (
+            {(!cohostsLocked || cohosts.length > 0) && (
+              <fieldset><legend>Medarrangører</legend>
+                <CohostPicker value={cohosts} onChange={setCohosts} owner={owner} locked={cohostsLocked} />
+              </fieldset>
+            )}
+            <fieldset><legend>{isNew ? 'Gentag' : 'Kopiér'}</legend>
+              <div className="choices sm" role="radiogroup" aria-label={isNew ? 'Gentag' : 'Kopiér'}>
+                {(isNew ? [[1, 'Én gang'], [4, '4 uger'], [8, '8 uger'], [12, '12 uger']] as const : [[0, 'Ingen kopier'], [4, '4 uger'], [8, '8 uger'], [12, '12 uger']] as const).map(([v, l]) => (
                   <button type="button" key={v} className="choice" role="radio" aria-checked={repeat === v} onClick={() => setRepeat(v)}>{l}</button>
                 ))}
               </div>
             </fieldset>
             {isNew && (
               <div className="preview">
-                <p className="flabel">Sådan ser det ud</p>
-                {!isAdmin && <p className="prog-note">Dit event bliver vist som COMMUNITY MADE EVENT. Alle kan tilmelde sig, og dem der følger dig får besked.</p>}
+                <p className="flabel">Forhåndsvisning</p>
                 <EventSlot preview ev={{
                   id: 'preview', title: title.trim() || suggested, sport, official: isAdmin ? official : false, createdBy: me?.id || '', coachId: me?.id || null,
                   date, time: effTime, duration: effTime ? duration : null, place: place.trim(), note: '', exercises: [], createdAt: 0, going: [], goingCount: 0,
@@ -377,25 +376,24 @@ export function EventForm({ event }: { event?: EventDoc }) {
           <fieldset className="cancel-box"><legend>Aflys</legend>
             {event.cancelled ? (
               <>
-                <p className="prog-note">Eventet er aflyst{event.cancelNote ? `: ${event.cancelNote}` : '.'} Genåbner du det, kan folk tilmelde sig igen, og de tilmeldte får besked.</p>
-                <button type="button" className="btn btn-outline btn-sm" disabled={busy} onClick={() => setCancelled(false)}><Icon name="refresh" />Genåbn eventet</button>
+                {event.cancelNote && <p className="prog-note">{event.cancelNote}</p>}
+                <button type="button" className="btn btn-outline btn-sm" disabled={busy} onClick={() => setCancelled(false)}><Icon name="refresh" />Genåbn</button>
               </>
             ) : cancelOpen ? (
               <>
-                <div className="field"><label htmlFor="f-cancel">Besked til deltagerne (valgfrit)</label>
-                  <textarea id="f-cancel" rows={2} maxLength={200} value={cancelNote} placeholder="Fx Aflyst pga. storm. Vi tager den næste søndag." onChange={(e) => setCancelNote(e.target.value)} /></div>
-                <p className="prog-note">Eventet bliver stående som aflyst, og alle tilmeldte og dem på ventelisten får besked med det samme.</p>
+                <div className="field"><label htmlFor="f-cancel">Besked</label>
+                  <textarea id="f-cancel" rows={2} maxLength={200} value={cancelNote} onChange={(e) => setCancelNote(e.target.value)} /></div>
                 <div className="row-btns">
-                  <button type="button" className="btn btn-danger btn-sm" disabled={busy} onClick={() => setCancelled(true)}><Icon name="ban" />Aflys og giv besked</button>
+                  <button type="button" className="btn btn-danger btn-sm" disabled={busy} onClick={() => setCancelled(true)}><Icon name="ban" />Aflys</button>
                   <button type="button" className="btn btn-quiet btn-sm" onClick={() => setCancelOpen(false)}>Fortryd</button>
                 </div>
               </>
             ) : (
-              <button type="button" className="btn btn-quiet danger btn-sm" onClick={() => setCancelOpen(true)}><Icon name="ban" />Aflys eventet</button>
+              <button type="button" className="btn btn-quiet danger btn-sm" onClick={() => setCancelOpen(true)}><Icon name="ban" />Aflys event</button>
             )}
           </fieldset>
         )}
-        {!isNew && (isAdmin || event?.createdBy === me?.id) && <div><button type="button" className={'btn btn-quiet danger' + (confirmDel ? ' confirm' : '')} onClick={remove}><Icon name="trash" />{confirmDel ? 'Tryk igen for at slette' : 'Slet event'}</button></div>}
+        {!isNew && (isAdmin || event?.createdBy === me?.id) && <div><button type="button" className={'btn btn-quiet danger' + (confirmDel ? ' confirm' : '')} onClick={remove}><Icon name="trash" />{confirmDel ? 'Slet?' : 'Slet event'}</button></div>}
         <p className="form-err" role="alert">{err}</p>
       </form>
     </Sheet>
@@ -423,8 +421,8 @@ function CohostPicker({ value, onChange, owner, locked }: { value: string[]; onC
         <div className="place-search">
           <div className="search">
             <Icon name="search" />
-            <label className="sr" htmlFor="cohost-q">Søg efter navn</label>
-            <input id="cohost-q" type="search" value={q} placeholder="Søg efter navn" autoComplete="off" onChange={(e) => setQ(e.target.value)} autoFocus />
+            <label className="sr" htmlFor="cohost-q">Søg</label>
+            <input id="cohost-q" type="search" value={q} placeholder="Søg" autoComplete="off" onChange={(e) => setQ(e.target.value)} autoFocus />
           </div>
           {needle && (matches.length ? (
             <ul className="place-list">
@@ -432,10 +430,9 @@ function CohostPicker({ value, onChange, owner, locked }: { value: string[]; onC
                 <li key={u.id}><button type="button" onClick={() => { onChange([...value, u.id]); setQ(''); setOpen(false); }}><Avatar uid={u.id} size="xs" /><b>{u.name}</b>{u.instagram && <span>@{u.instagram}</span>}</button></li>
               ))}
             </ul>
-          ) : <p className="small muted">Ingen på holdet hedder det.</p>)}
+          ) : <p className="small muted">Ingen fundet</p>)}
         </div>
       ) : <button type="button" className="btn btn-outline btn-sm" onClick={() => setOpen(true)}><Icon name="users" />Tilføj medarrangør</button>)}
-      <p className="prog-note" style={{ marginTop: 8 }}>{locked ? 'Kun arrangøren kan ændre, hvem der er medarrangører.' : 'Medarrangører kan rette eventet, checke folk ind, lægge billeder på og se feedback.'}</p>
     </div>
   );
 }
@@ -450,7 +447,7 @@ function MultiPhotoPicker({ blobs, setBlobs, max = 10 }: { blobs: Blob[]; setBlo
     setBusy(true); setErr('');
     const out: Blob[] = [];
     for (const f of [...files].slice(0, Math.max(0, max - blobs.length))) {
-      try { out.push(await compressImage(f)); } catch { setErr('Et af billederne kunne ikke læses.'); }
+      try { out.push(await compressImage(f)); } catch { setErr('Et billede kunne ikke læses'); }
     }
     setBlobs([...blobs, ...out]); setBusy(false);
   };
@@ -466,7 +463,7 @@ function MultiPhotoPicker({ blobs, setBlobs, max = 10 }: { blobs: Blob[]; setBlo
         </ul>
       )}
       {blobs.length < max && (
-        <span className="btn btn-outline btn-sm file-btn"><Icon name="camera" />{busy ? 'Gør billeder klar …' : blobs.length ? 'Tilføj flere' : 'Tilføj billeder'}
+        <span className="btn btn-outline btn-sm file-btn"><Icon name="camera" />{busy ? 'Vent …' : blobs.length ? 'Tilføj flere' : 'Tilføj billeder'}
           <input type="file" accept="image/*" multiple aria-label="Vælg billeder" onChange={(e) => { pick(e.target.files); e.target.value = ''; }} />
         </span>
       )}
@@ -531,10 +528,10 @@ function AddressField({ value, onChange, onPick, recent, near }: { value: string
   };
   return (
     <div className="field addr" ref={box}>
-      <label htmlFor="f-place">Hvor mødes I?</label>
+      <label htmlFor="f-place">Sted</label>
       <div className="addr-box">
         <Icon name="pin" />
-        <input id="f-place" ref={input} maxLength={80} value={value} placeholder="Park, strand eller adresse" autoComplete="off" autoCorrect="off" spellCheck={false} enterKeyHint="done"
+        <input id="f-place" ref={input} maxLength={80} value={value} placeholder="Adresse eller sted" autoComplete="off" autoCorrect="off" spellCheck={false} enterKeyHint="done"
           role="combobox" aria-expanded={shown} aria-controls="addr-list" aria-autocomplete="list" aria-activedescendant={shown && cur >= 0 ? `addr-opt-${cur}` : undefined}
           onFocus={() => setActive(true)} onKeyDown={onKey}
           onChange={(e) => { typed.current = true; setActive(true); onChange(e.target.value); }} />
@@ -552,13 +549,13 @@ function AddressField({ value, onChange, onPick, recent, near }: { value: string
               <Icon name="pin" /><span><b>{a.name}</b>{a.detail && <small>{a.detail}</small>}</span>
             </button>
           ))}
-          {hits && !hits.length && <p className="addr-note">Ingen forslag. Skriv bare stedet, fx "Ved stængerne bag skolen".</p>}
-          {state === 'error' && <p className="addr-note">Forslagene virker ikke lige nu. Skriv stedet selv.</p>}
+          {hits && !hits.length && <p className="addr-note">Ingen forslag</p>}
+          {state === 'error' && <p className="addr-note">Ingen forslag lige nu</p>}
           {shown && <p className="addr-src"><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap</a></p>}
         </div>
       )}
       {!open && recent.some((p) => p !== q) && (
-        <div className="recent" aria-label="Steder I har brugt før">
+        <div className="recent" aria-label="Seneste steder">
           {recent.filter((p) => p !== q).slice(0, 5).map((p) => <button type="button" key={p} className="choice" onClick={() => { typed.current = false; onChange(p); }}><Icon name="pin" />{p}</button>)}
         </div>
       )}

@@ -75,9 +75,9 @@ export function ProfilePage() {
       </div>
       {tab === 'act' ? (
         !acts ? <Skeleton /> : acts.length ? <ol className="feed">{acts.map((a) => <Boundary key={a.id}><ActivityCard a={a} /></Boundary>)}</ol>
-          : <p className="muted">{isMe ? 'Du har ikke delt nogen træninger endnu.' : 'Ingen aktivitet endnu.'}</p>
+          : <p className="muted">Ingen aktivitet</p>
       ) : signups.length ? <ol className="slots">{signups.map((e) => <li key={e.id}><EventSlot ev={e} /></li>)}</ol>
-        : <p className="muted">{isMe ? 'Du er ikke tilmeldt nogen kommende events.' : 'Ingen kommende tilmeldinger.'}</p>}
+        : <p className="muted">Ingen tilmeldinger</p>}
       {isMe && <MyMenu isAdmin={isAdmin} />}
     </>
   );
@@ -92,11 +92,11 @@ function MyMenu({ isAdmin }: { isAdmin: boolean }) {
   return (
     <ul className="menu">
       {coach && <li><Link to="/savner"><Icon name="heart" />Vi savner dig{missing > 0 && <span className="menu-n" aria-label={`${missing} at hilse på`}>{missing}</span>}<Icon name="chev" className="chev" /></Link></li>}
-      <li><Link to="/notifikationer"><Icon name="bell" />Notifikationer og push<Icon name="chev" className="chev" /></Link></li>
-      {api.features.calendarFeed && <li><button onClick={() => openSheet({ type: 'calendar' })}><Icon name="calplus" />Kalender i telefonen<Icon name="chev" className="chev" /></button></li>}
-      <li><button onClick={() => openSheet({ type: 'appearance' })}><Icon name="palette" />Udseende og farver<Icon name="chev" className="chev" /></button></li>
-      {isAdmin && <li><Link to="/admin"><Icon name="shield" />Admin: roller, vejr og Instagram<Icon name="chev" className="chev" /></Link></li>}
-      <li><button className={confirm ? 'danger' : ''} onClick={() => (confirm ? api.signOut() : setConfirm(true))}><Icon name="logout" />{confirm ? 'Tryk igen for at logge ud' : 'Log ud'}</button></li>
+      <li><Link to="/notifikationer"><Icon name="bell" />Notifikationer<Icon name="chev" className="chev" /></Link></li>
+      {api.features.calendarFeed && <li><button onClick={() => openSheet({ type: 'calendar' })}><Icon name="calplus" />Kalender<Icon name="chev" className="chev" /></button></li>}
+      <li><button onClick={() => openSheet({ type: 'appearance' })}><Icon name="palette" />Udseende<Icon name="chev" className="chev" /></button></li>
+      {isAdmin && <li><Link to="/admin"><Icon name="shield" />Admin<Icon name="chev" className="chev" /></Link></li>}
+      <li><button className={confirm ? 'danger' : ''} onClick={() => (confirm ? api.signOut() : setConfirm(true))}><Icon name="logout" />{confirm ? 'Log ud?' : 'Log ud'}</button></li>
     </ul>
   );
 }

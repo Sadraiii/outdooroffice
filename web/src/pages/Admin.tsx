@@ -16,19 +16,18 @@ export function AdminPage() {
   const saveToken = async () => {
     if (!token.trim()) return;
     setBusy(true);
-    try { await api.saveInstagramToken(token); setToken(''); toast('Adgangsnøglen er gemt', { body: 'Opslagene hentes om et øjeblik.' }); }
-    catch { toast('Nøglen blev ikke gemt.'); }
+    try { await api.saveInstagramToken(token); setToken(''); toast('Gemt'); }
+    catch { toast('Ikke gemt'); }
     setBusy(false);
   };
   return (
     <>
-      <section className="intro"><p className="eyebrow">Kun for admins</p><h1 className="h1">Admin</h1></section>
+      <section className="intro"><h1 className="h1">Admin</h1></section>
       <section className="card stack-v" style={{ marginTop: 14 }}>
         <h2 className="h3">Vejr</h2>
-        <p className="small muted">Events viser vejrudsigten for holdets by, og påmindelserne fortæller, hvordan vejret bliver. Arrangøren kan vælge en anden by på det enkelte event.</p>
         <PlacePicker value={team.weather} busy={savingTown} onChange={async (p) => {
           setSavingTown(true);
-          try { await api.saveTeamSettings({ weather: p }); toast(p ? `Vejret hentes nu for ${p.name}` : 'Byen er fjernet'); } catch { toast('Byen blev ikke gemt.'); }
+          try { await api.saveTeamSettings({ weather: p }); toast(p ? p.name : 'Fjernet'); } catch { toast('Ikke gemt'); }
           setSavingTown(false);
         }} />
       </section>
@@ -36,26 +35,24 @@ export function AdminPage() {
         <h2 className="h3">Instagram</h2>
         {instagram ? (
           <p className="small">
-            {instagram.error ? <span className="danger">Fejl ved sidste hentning: {instagram.error}</span> : <>Forbundet til <b>@{instagram.username}</b>. {instagram.posts.length} opslag, hentet {ago(instagram.updatedAt)}.</>}
+            {instagram.error ? <span className="danger">Fejl: {instagram.error}</span> : <><b>@{instagram.username}</b> · {instagram.posts.length} opslag · {ago(instagram.updatedAt)}</>}
           </p>
-        ) : <p className="small muted">Ikke forbundet endnu. Opslagene vises øverst i feedet, når nøglen er gemt.</p>}
+        ) : <p className="small muted">Ikke forbundet</p>}
         <div className="field">
-          <label htmlFor="ig-token">Adgangsnøgle fra Meta (Instagram API)</label>
-          <input id="ig-token" type="password" autoComplete="off" value={token} placeholder="Indsæt nøglen her" onChange={(e) => setToken(e.target.value)} />
+          <label htmlFor="ig-token">Instagram-nøgle</label>
+          <input id="ig-token" type="password" autoComplete="off" value={token} onChange={(e) => setToken(e.target.value)} />
         </div>
-        <button className="btn btn-ink" disabled={busy || !token.trim()} onClick={saveToken}><Icon name="insta" />Gem og hent opslag</button>
-        <p className="small muted">Nøglen kan ikke læses i appen igen. Serveren fornyer den automatisk, så den ikke udløber.</p>
+        <button className="btn btn-ink" disabled={busy || !token.trim()} onClick={saveToken}><Icon name="insta" />Gem</button>
       </section>
       <div className="sec-head"><h2 className="h2">Roller</h2></div>
-      <p className="small muted" style={{ marginBottom: 6 }}>Admins kan oprette OFFICIAL EVENTS og redigere alle events.</p>
       <ul className="toggle-list">
         {list.map((u) => (
           <li className="toggle-row" key={u.id} style={{ gridTemplateColumns: 'auto minmax(0,1fr) auto' }}>
             <Avatar uid={u.id} size="sm" />
             <div><b>{u.name}{u.id === me.id ? ' (dig)' : ''}</b><span>{u.role === 'admin' ? 'Admin' : 'Medlem'}</span></div>
             <Switch on={u.role === 'admin'} label={`Admin: ${u.name}`} onChange={async (v) => {
-              if (u.id === me.id && !v && list.filter((x) => x.role === 'admin').length < 2) { toast('Der skal være mindst én admin.'); return; }
-              try { await api.setRole(u.id, v ? 'admin' : 'member'); toast(v ? `${u.name} er nu admin` : `${u.name} er ikke længere admin`); } catch { toast('Rollen blev ikke ændret.'); }
+              if (u.id === me.id && !v && list.filter((x) => x.role === 'admin').length < 2) { toast('Der skal være mindst én admin'); return; }
+              try { await api.setRole(u.id, v ? 'admin' : 'member'); toast(v ? `${u.name} er admin` : `${u.name} er medlem`); } catch { toast('Ikke ændret'); }
             }} />
           </li>
         ))}

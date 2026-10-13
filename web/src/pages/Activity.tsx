@@ -22,19 +22,19 @@ export function ActivityPage() {
     {a && me && (a.uid === me.id || isAdmin) && (
       <button className={'btn btn-quiet btn-sm danger' + (confirm === 'act' ? ' confirm' : '')} onClick={async () => {
         if (confirm !== 'act') { setConfirm('act'); return; }
-        try { await api.deleteActivity(a.id); toast('Slettet'); nav('/'); } catch { toast('Det blev ikke slettet.'); }
-      }}><Icon name="trash" />{confirm === 'act' ? 'Tryk igen for at slette' : 'Slet'}</button>
+        try { await api.deleteActivity(a.id); toast('Slettet'); nav('/'); } catch { toast('Ikke slettet'); }
+      }}><Icon name="trash" />{confirm === 'act' ? 'Slet?' : 'Slet'}</button>
     )}
   </div>;
 
   if (a === undefined) return <>{back}<Skeleton /></>;
-  if (a === null) return <>{back}<section className="empty"><h2 className="h2">Opslaget findes ikke længere</h2></section></>;
+  if (a === null) return <>{back}<section className="empty"><h2 className="h2">Findes ikke</h2></section></>;
 
   const send = async () => {
     if (!me || !text.trim()) return;
     setBusy(true);
     try { await api.addComment(a.id, me.id, text.trim().slice(0, 500)); setText(''); }
-    catch { toast('Kommentaren blev ikke sendt.'); }
+    catch { toast('Ikke sendt'); }
     setBusy(false);
   };
 
@@ -57,14 +57,14 @@ export function ActivityPage() {
               <div><b>{shownName(c.uid)}</b><time>{ago(c.at)}</time><p>{c.text}</p></div>
               {me && (c.uid === me.id || isAdmin) ? (
                 <button className={'icon-btn' + (confirm === c.id ? ' confirm' : '')} aria-label={confirm === c.id ? 'Bekræft sletning' : 'Slet kommentar'}
-                  onClick={async () => { if (confirm !== c.id) { setConfirm(c.id); return; } setConfirm(null); await api.deleteComment(a.id, c.id).catch(() => toast('Kommentaren blev ikke slettet.')); }}>
+                  onClick={async () => { if (confirm !== c.id) { setConfirm(c.id); return; } setConfirm(null); await api.deleteComment(a.id, c.id).catch(() => toast('Ikke slettet')); }}>
                   {confirm === c.id ? 'Slet' : <Icon name="trash" />}
                 </button>
               ) : <span />}
             </li>
           ))}
         </ul>
-      ) : <p className="muted">Ingen kommentarer endnu. Skriv den første.</p>}
+      ) : <p className="muted">Ingen kommentarer</p>}
       <form className="composer" onSubmit={(e) => { e.preventDefault(); send(); }}>
         <label className="sr" htmlFor="c-text">Skriv en kommentar</label>
         <textarea id="c-text" rows={1} maxLength={500} value={text} placeholder="Skriv en kommentar …" onChange={(e) => setText(e.target.value)} />

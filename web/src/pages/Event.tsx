@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import type { Checkin, EventDoc, EventPhoto, Progress } from '../api/types';
 import { useApp, useSub, useTick } from '../state';
 import { DEMO } from '../api';
-import { ago, cap, deadlineText, isPast, longDate, startOf, status, timeSpan } from '../lib/dates';
+import { ago, deadlineText, isPast, longDate, startOf, status, timeSpan } from '../lib/dates';
 import { fmt } from '../lib/format';
 import { compressImage } from '../lib/image';
 import { checkinOpen, countsAsTraining, feedbackOpen, windowOf } from '../lib/checkin';
@@ -52,12 +52,12 @@ export function EventPage() {
     const done = ev.exercises.length > 0 && ev.exercises.every((x) => (next[x.id] || 0) >= x.target);
     const x = ev.exercises.find((y) => y.id === xid);
     if (done && !ev.exercises.every((y) => (mine?.[y.id] || 0) >= y.target)) {
-      celebrate({ kind: 'program', title: ev.title, sub: `Alle ${ev.exercises.length > 1 ? `${ev.exercises.length} øvelser` : 'reps'} er i hus. Dem der følger dig får besked.` });
-    } else if (x && (mine?.[xid] || 0) < x.target && v >= x.target) toast(`${x.name}: mål nået!`);
+      celebrate({ kind: 'program', title: ev.title });
+    } else if (x && (mine?.[xid] || 0) < x.target && v >= x.target) toast(`${x.name}: mål nået`);
     if (pending.current) window.clearTimeout(pending.current);
     pending.current = window.setTimeout(() => {
       pending.current = null;
-      api.setProgress(ev.id, me.id, next, done).catch(() => toast('Dine reps blev ikke gemt. Tjek forbindelsen.'));
+      api.setProgress(ev.id, me.id, next, done).catch(() => toast('Reps ikke gemt'));
     }, 600);
     if (v > 0 && !myRsvps.has(ev.id) && !isPast(ev) && !signupClosed(ev) && !ev.cancelled) api.setRsvp(ev.id, me.id, true).catch(() => undefined);
     if (v > 0 && !checkedIn && checkinOpen(ev)) api.setCheckin(ev.id, me.id, me.id, true).catch(() => undefined);
@@ -67,7 +67,7 @@ export function EventPage() {
     return (
       <>
         <div className="crumb"><button className="back" onClick={() => nav(-1)}><Icon name="back" />Tilbage</button></div>
-        {eventsReady && fetched === null ? <section className="empty"><h2 className="h2">Eventet findes ikke længere</h2><p>Det er måske blevet slettet.</p></section> : <Skeleton />}
+        {eventsReady && fetched === null ? <section className="empty"><h2 className="h2">Eventet findes ikke</h2></section> : <Skeleton />}
       </>
     );
   }
@@ -101,21 +101,19 @@ export function EventPage() {
       <header className="ev-head">
         <div className="tags"><EventBadge ev={ev} /><SportChip ev={ev} />{ev.cancelled ? <span className="status cancelled"><Icon name="ban" />Aflyst</span> : <span className={'status ' + st.cls}>{st.txt}</span>}</div>
         <h1 className={'h1' + (ev.cancelled ? ' struck' : '')}>{ev.title}</h1>
-        {ev.cancelled && <p className="cancel-note"><b>Eventet er aflyst.</b>{ev.cancelNote ? ` ${ev.cancelNote}` : ''}</p>}
+        {ev.cancelled && <p className="cancel-note"><b>Aflyst.</b>{ev.cancelNote ? ` ${ev.cancelNote}` : ''}</p>}
         <ul className="facts">
           <li><Icon name="cal" /><span>{longDate(ev)}{ev.time ? ` kl. ${timeSpan(ev)}` : ''}</span></li>
-          <li><Icon name="pin" />{ev.place
-            ? <a className="map-link" href={mapsUrl(ev.place, ev.geo, isIOS())} target="_blank" rel="noopener noreferrer" aria-label={`${ev.place}, vis på kort`}>{ev.place}</a>
-            : <span>Sted ikke sat</span>}</li>
+          {ev.place && <li><Icon name="pin" /><a className="map-link" href={mapsUrl(ev.place, ev.geo, isIOS())} target="_blank" rel="noopener noreferrer" aria-label={`${ev.place}, vis på kort`}>{ev.place}</a></li>}
           {ev.coachId && <li><Icon name="watch" /><UserLink uid={ev.coachId} className="who"><Avatar uid={ev.coachId} size="xs" />{ev.official ? 'Coach' : 'Arrangør'}: {shownName(ev.coachId)}</UserLink></li>}
           {ev.cohosts.length > 0 && (
             <li className="co-fact"><Icon name="flag" /><span>{ev.cohosts.length > 1 ? 'Medarrangører' : 'Medarrangør'}:</span>
               {ev.cohosts.map((u) => <UserLink key={u} uid={u} className="who"><Avatar uid={u} size="xs" />{shownName(u)}</UserLink>)}
             </li>
           )}
-          {past && !ev.cancelled && ev.feedbackCount >= 3 && <li><Icon name="star" /><span><b className="fb-fact">{avgText(ev.feedbackSum, ev.feedbackCount)}</b> ud af 5 fra {ev.feedbackCount} deltagere</span></li>}
+          {past && !ev.cancelled && ev.feedbackCount >= 3 && <li><Icon name="star" /><span><b className="fb-fact">{avgText(ev.feedbackSum, ev.feedbackCount)}</b>/5 · {ev.feedbackCount} svar</span></li>}
           {ev.capacity && !past && !ev.cancelled && <li className={attendees.length >= ev.capacity ? 'warn' : ''}><Icon name="users" /><span>{seatsText(ev, attendees.length, place.waitlist.length)}</span></li>}
-          {ev.signupUntil && !past && !ev.cancelled && <li className={closed ? 'warn' : ''}><Icon name="clock" /><span>{closed ? 'Tilmeldingen er lukket' : `Tilmelding senest ${deadlineText(ev.signupUntil)}`}</span></li>}
+          {ev.signupUntil && !past && !ev.cancelled && <li className={closed ? 'warn' : ''}><Icon name="clock" /><span>{closed ? 'Tilmelding lukket' : `Tilmelding senest ${deadlineText(ev.signupUntil)}`}</span></li>}
           <WeatherFact ev={ev} />
         </ul>
         {ev.note && <p className="note">{ev.note}</p>}
@@ -147,9 +145,9 @@ export function EventPage() {
         {tab === 'photos' && <PhotosTab ev={ev} photos={photos} canAdd={!!me && (ev.photoPolicy === 'all' || canEdit)} asHost={canEdit} onOpen={(i) => setViewer({ which: 'all', index: i })} />}
       </section>
       <div className="share-row">
-        {(past || started) && !ev.cancelled && <button className="btn btn-primary btn-sm" onClick={() => openSheet({ type: 'share-recap', event: ev })}><Icon name="story" />Lav recap</button>}
-        <button className="btn btn-outline btn-sm" onClick={() => openSheet({ type: 'share-event', event: ev })}><Icon name="share" />Del eventet</button>
-        {!past && !ev.cancelled && <button className="btn btn-outline btn-sm" onClick={() => openSheet({ type: 'workout', eventId: ev.id })}><Icon name="trophy" />Del din træning</button>}
+        {(past || started) && !ev.cancelled && <button className="btn btn-primary btn-sm" onClick={() => openSheet({ type: 'share-recap', event: ev })}><Icon name="story" />Recap</button>}
+        <button className="btn btn-outline btn-sm" onClick={() => openSheet({ type: 'share-event', event: ev })}><Icon name="share" />Del</button>
+        {!past && !ev.cancelled && <button className="btn btn-outline btn-sm" onClick={() => openSheet({ type: 'workout', eventId: ev.id })}><Icon name="trophy" />Del træning</button>}
       </div>
       {!ev.cancelled && <CalendarLinks ev={ev} />}
       {viewer && viewList.length > 0 && <PhotoViewer ev={ev} list={viewList} start={Math.min(viewer.index, viewList.length - 1)} canModerate={canEdit} onClose={() => setViewer(null)} />}
@@ -188,23 +186,20 @@ function PhotosTab({ ev, photos, canAdd, asHost, onOpen }: { ev: EventDoc; photo
       try { await api.addEventPhoto(ev.id, me.id, await compressImage(f), asHost); done++; } catch {  }
     }
     setBusy('');
-    if (done < list.length) toast(`${list.length - done} billede${list.length - done > 1 ? 'r' : ''} blev ikke lagt op`, { body: 'Tjek forbindelsen og prøv igen.' });
-    else toast(done > 1 ? `${done} billeder er delt` : 'Billedet er delt', { body: asHost ? 'De vises øverst på eventet.' : 'Holdet kan se dem her under Billeder.' });
+    if (done < list.length) toast(`${list.length - done} ikke lagt op`);
+    else toast(done > 1 ? `${done} billeder delt` : 'Billede delt');
   };
   if (!photos) return <Skeleton />;
   const mixed = photos.some((p) => p.host) && photos.some((p) => !p.host);
-  const from = isPast(ev) ? 'fra eventet' : mixed ? 'fra arrangøren og holdet' : photos.some((p) => p.host) ? 'fra arrangøren' : 'fra holdet';
   return (
     <>
-      <div className="ph-head">
-        <p className="hint">{photos.length ? `${photos.length} billede${photos.length > 1 ? 'r' : ''} ${from}` : 'Ingen billeder endnu'}</p>
-        {canAdd && (
+      {canAdd && (
+        <div className="ph-head">
           <span className={'btn btn-primary btn-sm file-btn' + (busy ? ' is-busy' : '')}><Icon name="camera" />{busy || 'Tilføj billeder'}
             <input type="file" accept="image/*" multiple aria-label="Vælg billeder" disabled={!!busy} onChange={(e) => { add(e.target.files); e.target.value = ''; }} />
           </span>
-        )}
-      </div>
-      {!canAdd && ev.photoPolicy === 'host' && <p className="prog-note">Kun arrangøren kan lægge billeder på dette event.</p>}
+        </div>
+      )}
       {photos.length ? (
         <ul className="ph-grid">
           {photos.map((p, i) => (
@@ -217,7 +212,7 @@ function PhotosTab({ ev, photos, canAdd, asHost, onOpen }: { ev: EventDoc; photo
           ))}
         </ul>
       ) : (
-        <div className="empty"><p>{isPast(ev) ? 'Del dine billeder fra eventet, så holdet kan se dem.' : 'Billeder fra eventet samles her.'}</p></div>
+        <div className="empty"><p>Ingen billeder</p></div>
       )}
     </>
   );
@@ -247,7 +242,7 @@ function PhotoViewer({ ev, list, start, canModerate, onClose }: { ev: EventDoc; 
   const del = async () => {
     if (!p) return;
     if (!confirm) { setConfirm(true); return; }
-    try { await api.deleteEventPhoto(ev.id, p.id); toast('Billedet er slettet'); if (list.length <= 1) onClose(); } catch { toast('Billedet blev ikke slettet.'); }
+    try { await api.deleteEventPhoto(ev.id, p.id); toast('Billedet er slettet'); if (list.length <= 1) onClose(); } catch { toast('Ikke slettet'); }
   };
   return (
     <div className="viewer" role="dialog" aria-modal="true" aria-label={`Billeder fra ${ev.title}`}>
@@ -275,7 +270,7 @@ function ProgramTab({ ev, mine, setCount, canEdit }: { ev: EventDoc; mine: Recor
   if (!ev.exercises.length) {
     return (
       <div className="empty">
-        <p>{ev.sport === 'socialt' ? 'Et socialt arrangement. Tilmeld dig, så arrangøren ved, hvor mange der kommer.' : 'Der er ikke lagt et program ind for dette event.'}</p>
+        <p>Intet program</p>
         {canEdit && ev.sport !== 'socialt' && <button className="btn btn-primary" onClick={() => openSheet({ type: 'event', event: ev })}><Icon name="plus" />Læg program ind</button>}
       </div>
     );
@@ -283,7 +278,6 @@ function ProgramTab({ ev, mine, setCount, canEdit }: { ev: EventDoc; mine: Recor
   if (!mine) return <Skeleton />;
   return (
     <>
-      <p className="hint">Log dine reps undervejs. Holdet kan følge med live.</p>
       <div className="counters">{ev.exercises.map((x) => <Counter key={x.id} x={x} value={mine[x.id] || 0} onChange={(v) => setCount(x.id, v)} />)}</div>
       {canEdit && <p style={{ marginTop: 12 }}><button className="btn btn-quiet btn-wide" onClick={() => openSheet({ type: 'event', event: ev })}><Icon name="edit" />Rediger program</button></p>}
     </>
@@ -302,8 +296,8 @@ function TeamTab({ ev, progress, attendees, mine }: { ev: EventDoc; progress: Pr
   const xs = ev.exercises;
   const people = [...new Set([...attendees, ...[...counts.entries()].filter(([, c]) => Object.values(c).some((v) => v > 0)).map(([u]) => u)])];
   if (!progress) return <Skeleton />;
-  if (!people.length) return <div className="empty"><p>Ingen har tilmeldt sig eller logget noget endnu.</p></div>;
-  if (!xs.length) return <div className="empty"><p>Der er intet program at følge for dette event. Se hvem der kommer under Deltagere.</p></div>;
+  if (!people.length) return <div className="empty"><p>Ingen endnu</p></div>;
+  if (!xs.length) return <div className="empty"><p>Intet program</p></div>;
   const c = (u: string, x: string) => counts.get(u)?.[x] || 0;
   const pct = (u: string) => xs.reduce((s, x) => s + Math.min(1, c(u, x.id) / (x.target || 1)), 0) / xs.length;
   const x1 = sel === 'all' ? null : xs.find((x) => x.id === sel) || null;
@@ -312,7 +306,7 @@ function TeamTab({ ev, progress, attendees, mine }: { ev: EventDoc; progress: Pr
   return (
     <>
       <section className="card team-sum">
-        <div className="sum-head"><h3 className="h3">Holdet samlet</h3><span className="live">Opdateres live</span></div>
+        <div className="sum-head"><h3 className="h3">Samlet</h3><span className="live">Live</span></div>
         {xs.map((x) => {
           const tot = people.reduce((s, u) => s + c(u, x.id), 0); const goal = x.target * people.length; const p = goal ? Math.min(1, tot / goal) : 0;
           return (
@@ -322,7 +316,7 @@ function TeamTab({ ev, progress, attendees, mine }: { ev: EventDoc; progress: Pr
             </div>
           );
         })}
-        <p className="sum-foot">{people.length} på holdet · målet er programmet gange antal deltagere</p>
+        <p className="sum-foot">{people.length} deltagere</p>
       </section>
       {xs.length > 1 && (
         <div className="chips" role="group" aria-label="Vis tavlen for">
@@ -367,7 +361,7 @@ function PeopleTab({ ev, attendees, waitlist, checkins, canMark }: { ev: EventDo
   };
   return (
     <>
-      {here.size > 0 && <p className="hint"><Icon name="checkin" /> {here.size} af {list.length} er checket ind{canMark ? '. Tryk for at rette.' : ''}</p>}
+      {here.size > 0 && <p className="hint"><Icon name="checkin" /> {here.size} af {list.length} checket ind</p>}
       {list.length ? (
         <ul className="people-grid">
           {list.map((u) => (
@@ -380,11 +374,10 @@ function PeopleTab({ ev, attendees, waitlist, checkins, canMark }: { ev: EventDo
             </li>
           ))}
         </ul>
-      ) : <div className="empty"><p>{isPast(ev) ? 'Ingen var tilmeldt.' : 'Ingen har tilmeldt sig endnu. Bliv den første.'}</p></div>}
+      ) : <div className="empty"><p>{isPast(ev) ? 'Ingen deltog' : 'Ingen tilmeldt'}</p></div>}
       {waitlist.length > 0 && !isPast(ev) && (
         <section className="waitlist">
           <h3 className="h3">Venteliste <span className="seg-n">{waitlist.length}</span></h3>
-          <p className="prog-note">Rykker automatisk ind i den rækkefølge, de skrev sig på, når nogen melder fra.</p>
           <ol>
             {waitlist.map((u, i) => <li key={u}><span className="wl-n">{i + 1}</span><Link to={`/u/${u}`}><Avatar uid={u} size="sm" /><span>{shownName(u)}</span></Link></li>)}
           </ol>
@@ -396,7 +389,7 @@ function PeopleTab({ ev, attendees, waitlist, checkins, canMark }: { ev: EventDo
 
 function CalendarLinks({ ev }: { ev: EventDoc }) {
   const { api, openSheet, toast } = useApp();
-  const ics = () => (DEMO ? toast('På telefonen åbner kalenderen her', { body: 'Tryk Tilføj, så ligger eventet i din kalender med en påmindelse.' }) : downloadIcs(ev));
+  const ics = () => (DEMO ? toast('Åbner kalenderen') : downloadIcs(ev));
   const st = startOf(ev);
   if (!st || isPast(ev)) return null;
   const title = 'Outdoor Office: ' + ev.title;
@@ -416,13 +409,13 @@ function CalendarLinks({ ev }: { ev: EventDoc }) {
   }
   return (
     <section className="cal">
-      <div><b>Læg i kalenderen</b><p className="muted">{cap(longDate(ev))}{ev.time ? ` kl. ${timeSpan(ev)}` : ''}. Kalenderen minder dig om det.</p></div>
+      <b>Læg i kalenderen</b>
       <div className="cal-btns">
         <button type="button" className="btn btn-outline btn-sm" onClick={ics}><Icon name="download" />iPhone og Mac</button>
         <a className="btn btn-outline btn-sm" href={g} target="_blank" rel="noopener noreferrer"><Icon name="cal" />Google Kalender</a>
         <a className="btn btn-outline btn-sm" href={o} target="_blank" rel="noopener noreferrer"><Icon name="cal" />Outlook</a>
       </div>
-      {api.features.calendarFeed && <button type="button" className="link" onClick={() => openSheet({ type: 'calendar' })}><Icon name="calplus" />Abonnér på alle dine events i stedet</button>}
+      {api.features.calendarFeed && <button type="button" className="link" onClick={() => openSheet({ type: 'calendar' })}><Icon name="calplus" />Abonnér på alle dine events</button>}
     </section>
   );
 }
