@@ -58,7 +58,7 @@ export function ProfilePage() {
         {isMe ? (
           <>
             <button className="btn btn-outline btn-sm" onClick={() => openSheet({ type: 'profile' })}><Icon name="edit" />Rediger profil</button>
-            <button className="btn btn-primary btn-sm" onClick={() => openSheet({ type: 'workout' })}><Icon name="plus" />Del træning</button>
+            <button className="btn btn-primary btn-sm" onClick={() => openSheet({ type: 'workout' })}><Icon name="plus" />Del med community</button>
           </>
         ) : <FollowButton uid={uid} />}
       </div>

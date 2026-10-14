@@ -147,7 +147,7 @@ export function EventPage() {
       <div className="share-row">
         {(past || started) && !ev.cancelled && <button className="btn btn-primary btn-sm" onClick={() => openSheet({ type: 'share-recap', event: ev })}><Icon name="story" />Recap</button>}
         <button className="btn btn-outline btn-sm" onClick={() => openSheet({ type: 'share-event', event: ev })}><Icon name="share" />Del</button>
-        {!past && !ev.cancelled && joined && <button className="btn btn-outline btn-sm" onClick={() => openSheet({ type: 'workout', eventId: ev.id })}><Icon name="trophy" />Del træning</button>}
+        {!past && !ev.cancelled && joined && <button className="btn btn-outline btn-sm" onClick={() => openSheet({ type: 'workout', eventId: ev.id })}><Icon name="users" />Del med community</button>}
       </div>
       {!ev.cancelled && <CalendarLinks ev={ev} />}
       {viewer && viewList.length > 0 && <PhotoViewer ev={ev} list={viewList} start={Math.min(viewer.index, viewList.length - 1)} canModerate={canEdit} onClose={() => setViewer(null)} />}

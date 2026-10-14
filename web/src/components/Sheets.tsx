@@ -18,7 +18,7 @@ import { Icon } from './Icon';
 import { Avatar, Skeleton, Switch, colorFor } from './bits';
 import { CalendarSheet } from './CalendarSheet';
 import { EventForm } from './EventForm';
-import { WorkoutSheet } from './WorkoutSheet';
+import { SHARE_LABEL, WorkoutSheet } from './WorkoutSheet';
 
 export function SheetHost() {
   const { sheet, closeSheet } = useApp();
@@ -41,8 +41,8 @@ export function SheetHost() {
 
 function CreateMenu() {
   const { closeSheet, openSheet } = useApp();
-  const opts: [string, 'trophy' | 'flag', () => void][] = [
-    ['Del træning', 'trophy', () => openSheet({ type: 'workout' })],
+  const opts: [string, 'users' | 'flag', () => void][] = [
+    [SHARE_LABEL, 'users', () => openSheet({ type: 'workout' })],
     ['Opret event', 'flag', () => openSheet({ type: 'event' })],
   ];
   return (
@@ -295,7 +295,7 @@ function ShareSheet({ title, kind, make, parts, link }: ShareProps) {
 function ShareActivity({ a }: { a: Activity }) {
   const { nameOf } = useApp();
   return (
-    <ShareSheet title="Del træning" kind="activity" parts={activityParts(a)}
+    <ShareSheet title="Del som story" kind="activity" parts={activityParts(a)}
       make={(s, look) => (s === 'clear' ? activitySticker(a, look) : activityStory(a, nameOf(a.uid), look.bg))}
       link={{ url: appUrl(`/a/${a.id}`), title: a.title || 'Træning' }} />
   );

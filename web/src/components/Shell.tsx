@@ -37,7 +37,7 @@ export function TabBar() {
     <nav className="tabbar" aria-label="Hovedmenu">
       <div className="tabbar-in">
         {tab(tabs[0])}{tab(tabs[1])}
-        <button className="tab" onClick={() => openSheet({ type: 'create' })} aria-label="Del træning eller opret event">
+        <button className="tab" onClick={() => openSheet({ type: 'create' })} aria-label="Del med community eller opret event">
           <span className="tab-plus"><Icon name="plus" /></span>
         </button>
         {tab(tabs[2])}{tab(tabs[3])}

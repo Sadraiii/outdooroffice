@@ -823,20 +823,20 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --band: #262B26; --band-ink: #ECEFE8; } }
 :root[data-theme="dark"] { --band: #262B26; --band-ink: #ECEFE8; }
 :root[data-theme="black"] { --band: #1A1E1A; --band-ink: #ECEFE8; }
-.slot { --bar: #737A72; }
-.slot[data-sport="calisthenics"] { --bar: #2B3F8F; } .slot[data-sport="fitness"] { --bar: #D2551F; } .slot[data-sport="lob"] { --bar: #2F7FD8; }
-.slot[data-sport="cykling"] { --bar: #13857A; } .slot[data-sport="gang"] { --bar: #4C8A2B; } .slot[data-sport="yoga"] { --bar: #A3489C; }
-.slot[data-sport="vinterbadning"] { --bar: #3FA9D3; } .slot[data-sport="socialt"] { --bar: #D69A12; }
+:is(.slot, .wo-sport) { --bar: #737A72; }
+[data-sport="calisthenics"] { --bar: #2B3F8F; } [data-sport="fitness"] { --bar: #D2551F; } [data-sport="lob"] { --bar: #2F7FD8; }
+[data-sport="cykling"] { --bar: #13857A; } [data-sport="gang"] { --bar: #4C8A2B; } [data-sport="yoga"] { --bar: #A3489C; }
+[data-sport="vinterbadning"] { --bar: #3FA9D3; } [data-sport="socialt"] { --bar: #D69A12; }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .slot[data-sport="calisthenics"] { --bar: #8DA6F5; } :root:not([data-theme="light"]) .slot[data-sport="fitness"] { --bar: #F2A66B; }
-  :root:not([data-theme="light"]) .slot[data-sport="lob"] { --bar: #7FB8F5; } :root:not([data-theme="light"]) .slot[data-sport="cykling"] { --bar: #5FD0C2; }
-  :root:not([data-theme="light"]) .slot[data-sport="gang"] { --bar: #9BD46E; } :root:not([data-theme="light"]) .slot[data-sport="yoga"] { --bar: #E39BDD; }
-  :root:not([data-theme="light"]) .slot[data-sport="vinterbadning"] { --bar: #8AD8F2; } :root:not([data-theme="light"]) .slot[data-sport="socialt"] { --bar: #F2C14E; }
+  :root:not([data-theme="light"]) [data-sport="calisthenics"] { --bar: #8DA6F5; } :root:not([data-theme="light"]) [data-sport="fitness"] { --bar: #F2A66B; }
+  :root:not([data-theme="light"]) [data-sport="lob"] { --bar: #7FB8F5; } :root:not([data-theme="light"]) [data-sport="cykling"] { --bar: #5FD0C2; }
+  :root:not([data-theme="light"]) [data-sport="gang"] { --bar: #9BD46E; } :root:not([data-theme="light"]) [data-sport="yoga"] { --bar: #E39BDD; }
+  :root:not([data-theme="light"]) [data-sport="vinterbadning"] { --bar: #8AD8F2; } :root:not([data-theme="light"]) [data-sport="socialt"] { --bar: #F2C14E; }
 }
-:root:is([data-theme="dark"], [data-theme="black"]) .slot[data-sport="calisthenics"] { --bar: #8DA6F5; } :root:is([data-theme="dark"], [data-theme="black"]) .slot[data-sport="fitness"] { --bar: #F2A66B; }
-:root:is([data-theme="dark"], [data-theme="black"]) .slot[data-sport="lob"] { --bar: #7FB8F5; } :root:is([data-theme="dark"], [data-theme="black"]) .slot[data-sport="cykling"] { --bar: #5FD0C2; }
-:root:is([data-theme="dark"], [data-theme="black"]) .slot[data-sport="gang"] { --bar: #9BD46E; } :root:is([data-theme="dark"], [data-theme="black"]) .slot[data-sport="yoga"] { --bar: #E39BDD; }
-:root:is([data-theme="dark"], [data-theme="black"]) .slot[data-sport="vinterbadning"] { --bar: #8AD8F2; } :root:is([data-theme="dark"], [data-theme="black"]) .slot[data-sport="socialt"] { --bar: #F2C14E; }
+:root:is([data-theme="dark"], [data-theme="black"]) [data-sport="calisthenics"] { --bar: #8DA6F5; } :root:is([data-theme="dark"], [data-theme="black"]) [data-sport="fitness"] { --bar: #F2A66B; }
+:root:is([data-theme="dark"], [data-theme="black"]) [data-sport="lob"] { --bar: #7FB8F5; } :root:is([data-theme="dark"], [data-theme="black"]) [data-sport="cykling"] { --bar: #5FD0C2; }
+:root:is([data-theme="dark"], [data-theme="black"]) [data-sport="gang"] { --bar: #9BD46E; } :root:is([data-theme="dark"], [data-theme="black"]) [data-sport="yoga"] { --bar: #E39BDD; }
+:root:is([data-theme="dark"], [data-theme="black"]) [data-sport="vinterbadning"] { --bar: #8AD8F2; } :root:is([data-theme="dark"], [data-theme="black"]) [data-sport="socialt"] { --bar: #F2C14E; }
 
 .schedule { margin-top: 4px; }
 .day-group + .day-group { margin-top: 6px; }
@@ -1028,3 +1028,18 @@ body:has(.su-dock) .toasts { bottom: calc(var(--nav-h) + var(--safe-bottom) + 86
 .ev-head { justify-items: center; text-align: center; }
 .ev-head .tags { justify-content: center; }
 .ev-head .facts, .ev-head .note, .ev-head .cancel-note { justify-self: stretch; text-align: left; }
+
+.wo-sport { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; width: 100%; padding: 10px 14px 10px 10px; border-radius: 16px; background: var(--card); border: 1px solid var(--line); box-shadow: inset 4px 0 0 var(--bar); text-align: left; }
+.wo-sport b { font: 800 22px/1 var(--display); text-transform: uppercase; letter-spacing: .02em; }
+.wo-sport .opt-ic { color: var(--bar); }
+.wo-prev { margin: 0; pointer-events: none; }
+.wo-prev > li { margin: 0; }
+.wo-extras { display: flex; flex-wrap: wrap; gap: 8px; }
+.wo-extra { position: relative; display: inline-flex; align-items: center; gap: 7px; min-height: 42px; padding: 0 15px 0 12px; border-radius: 999px; border: 1px solid var(--line-2); font: 600 14px/1 var(--body); color: var(--ink); cursor: pointer; max-width: 100%; }
+.wo-extra .ic { width: 18px; height: 18px; color: var(--ink-3); flex: none; }
+.wo-extra.on { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.wo-extra.on .ic { color: var(--paper); }
+.wo-extra input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.wo-extra select { width: auto; min-width: 0; max-width: 220px; padding: 0 18px 0 0; border: 0; background-color: transparent; background-position: calc(100% - 6px) 52%, calc(100% - 1px) 52%; color: inherit; font: inherit; text-overflow: ellipsis; }
+.wo-extra select:focus { outline: none; }
+.wo-done { padding-bottom: 14px; }
