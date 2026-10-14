@@ -1,3 +1,4 @@
+import type { Sport } from '../api/types';
 import { BADGE_PATHS } from '../lib/badgeArt';
 
 const STATIC = {
@@ -71,3 +72,7 @@ export type IconName = keyof typeof P;
 export function Icon({ name, className }: { name: IconName; className?: string }) {
   return <svg className={'ic' + (className ? ' ' + className : '')} viewBox="0 0 24 24" aria-hidden="true" dangerouslySetInnerHTML={{ __html: P[name] }} />;
 }
+
+export const SPORT_ICON: Record<Sport, IconName> = {
+  calisthenics: 'bar', fitness: 'dumbbell', lob: 'shoe', cykling: 'bike', gang: 'walk', yoga: 'lotus', vinterbadning: 'wave', socialt: 'pizza', andet: 'star',
+};

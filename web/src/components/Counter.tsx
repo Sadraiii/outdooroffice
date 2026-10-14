@@ -17,12 +17,11 @@ export function Tally({ pct }: { pct: number }) {
   );
 }
 
-export function steps(x: Exercise): [number, number] {
+export function steps(x: Exercise): number {
   const nice = [0.1, 0.25, 0.5, 1, 2, 5, 10, 20, 25, 50, 100, 250, 500, 1000];
   const raw = (Number(x.target) || 0) / 20;
-  let s = nice.find((n) => n >= raw) || 1000;
-  if (x.unit !== 'km' && s < 1) s = 1;
-  return [s, s < 1 ? 1 : s * 5];
+  const s = nice.find((n) => n >= raw) || 1000;
+  return x.unit !== 'km' && s < 1 ? 1 : s;
 }
 
 const amountKey = (id: string) => `oo.amount.${id}`;
@@ -43,7 +42,7 @@ export function Counter({ x, value, onChange, readOnly }: { x: Exercise; value: 
   const tgt = Number(x.target) || 0;
   const pct = tgt ? Math.min(1, value / tgt) : 0;
   const done = tgt > 0 && value >= tgt;
-  const [s, big] = steps(x);
+  const s = steps(x);
   const set = (v: number) => {
     const next = Math.max(0, Math.min(99999, Math.round(v * 100) / 100));
     buzz(tgt > 0 && value < tgt && next >= tgt ? [24, 50, 24] : 8);
@@ -62,7 +61,7 @@ export function Counter({ x, value, onChange, readOnly }: { x: Exercise; value: 
     <article className={'counter' + (done ? ' done' : '') + (bump ? ' bump' : '')}>
       <header className="c-head">
         <h3 className="c-name">{x.name}</h3>
-        {done ? <span className="badge-done"><Icon name="check" />Klaret</span> : <span className="c-pct">{Math.round(pct * 100)} %</span>}
+        {done ? <span className="badge-done" role="img" aria-label="Klaret"><Icon name="check" /></span> : <span className="c-pct">{Math.round(pct * 100)} %</span>}
       </header>
       <div className="c-num">
         {editing ? (
@@ -77,17 +76,16 @@ export function Counter({ x, value, onChange, readOnly }: { x: Exercise; value: 
       <Tally pct={pct} />
       {!readOnly && (
         <div className="c-ctrl">
-          <button className="btn btn-outline btn-sq" onClick={() => set(value - s)} aria-label={`Træk ${fmt(s)} fra ${x.name}`}>−{fmt(s)}</button>
+          <button className="btn btn-outline" onClick={() => set(value - s)} aria-label={`Træk ${fmt(s)} fra ${x.name}`}>−{fmt(s)}</button>
           <button className="btn btn-primary" onClick={() => set(value + s)} aria-label={`Læg ${fmt(s)} til ${x.name}`}>+{fmt(s)}</button>
-          <button className="btn btn-outline" onClick={() => set(value + big)} aria-label={`Læg ${fmt(big)} til ${x.name}`}>+{fmt(big)}</button>
         </div>
       )}
       {!readOnly && (
         <form className="c-custom" onSubmit={(e) => { e.preventDefault(); addAmount(1); }}>
+          <button type="button" className="btn btn-outline" onClick={() => addAmount(-1)} aria-label={ok ? `Træk ${fmt(n!)} fra ${x.name}` : 'Træk fra'}>{ok ? `−${fmt(n!)}` : '−'}</button>
           <input ref={amountInput} className="c-amount" inputMode="decimal" enterKeyHint="done" autoComplete="off" placeholder="Eget antal"
             aria-label={`Eget antal ${x.name}`} value={amount} onChange={(e) => setAmount(e.target.value)} />
-          <button type="button" className="btn btn-outline btn-sq" onClick={() => addAmount(-1)} aria-label={ok ? `Træk ${fmt(n!)} fra ${x.name}` : 'Træk fra'}>{ok ? `−${fmt(n!)}` : '−'}</button>
-          <button type="submit" className="btn btn-outline c-add" aria-label={ok ? `Læg ${fmt(n!)} til ${x.name}` : 'Læg til'}>{ok ? `+${fmt(n!)}` : 'Læg til'}</button>
+          <button type="submit" className="btn btn-outline" aria-label={ok ? `Læg ${fmt(n!)} til ${x.name}` : 'Læg til'}>{ok ? `+${fmt(n!)}` : '+'}</button>
         </form>
       )}
     </article>

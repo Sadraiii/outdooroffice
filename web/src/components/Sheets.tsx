@@ -1,16 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { Activity, EventDoc, EventPhoto, Progress, RepLine, Sport } from '../api/types';
+import type { Activity, EventDoc, EventPhoto, Progress } from '../api/types';
 import { useApp, useSub } from '../state';
 import { DEMO } from '../api';
-import { SPORTS, WORKOUT_SPORTS, sportLabel, sportMetric } from '../lib/sports';
-import { cleanHandle, initials, newId, parseDuration, parseNumber } from '../lib/format';
-import { bySort, cap, dateOf, isPast, relDay, todayStr, whenText } from '../lib/dates';
+import { cleanHandle, initials } from '../lib/format';
+import { bySort, cap, dateOf, isPast, todayStr, whenText } from '../lib/dates';
 import { compressImage } from '../lib/image';
 import { ACCENTS, DEFAULT_APPEARANCE, MODES, SIZES, loadAppearance, saveAppearance, type Appearance } from '../lib/theme';
 import { buzz, canVibrate } from '../lib/platform';
 import {
   DEFAULT_LOOK, STICKER_COLORS, STORY_BGS, activityParts, activitySticker, activityStory, badgeParts, badgeSticker, badgeStory, canCopyImage, copyImage,
-  eventParts, eventSticker, eventStory, loadPhotos, recapParts, recapSticker, recapStory, shareImage, shareLink, type RecapData, type ShareLook,
+  eventParts, eventSticker, eventStory, loadPhotos, recapParts, recapSticker, recapStory, saveImage, shareImage, shareLink, type RecapData, type ShareLook,
 } from '../lib/share';
 import { badgeById, weeksAway } from '../lib/stats';
 import { weatherFor } from '../lib/weather';
@@ -19,6 +18,7 @@ import { Icon } from './Icon';
 import { Avatar, Skeleton, Switch, colorFor } from './bits';
 import { CalendarSheet } from './CalendarSheet';
 import { EventForm } from './EventForm';
+import { WorkoutSheet } from './WorkoutSheet';
 
 export function SheetHost() {
   const { sheet, closeSheet } = useApp();
@@ -26,7 +26,7 @@ export function SheetHost() {
   switch (sheet.type) {
     case 'create': return <CreateMenu />;
     case 'event': return <EventForm event={sheet.event} key={sheet.event?.id || 'new'} />;
-    case 'workout': return <WorkoutForm eventId={sheet.eventId} />;
+    case 'workout': return <WorkoutSheet eventId={sheet.eventId} />;
     case 'profile': return <ProfileForm />;
     case 'appearance': return <AppearanceSheet />;
     case 'calendar': return <CalendarSheet />;
@@ -41,135 +41,21 @@ export function SheetHost() {
 
 function CreateMenu() {
   const { closeSheet, openSheet } = useApp();
-  const tiles: [string, 'trophy' | 'flag', () => void][] = [
+  const opts: [string, 'trophy' | 'flag', () => void][] = [
     ['Del træning', 'trophy', () => openSheet({ type: 'workout' })],
     ['Opret event', 'flag', () => openSheet({ type: 'event' })],
   ];
   return (
     <Sheet title="Opret" onClose={closeSheet}>
-      <div className="actions-grid">
-        {tiles.map(([t, i, fn]) => (
-          <button key={t} className="action-tile" onClick={fn}>
-            <span className="ic-big"><Icon name={i} /></span>
-            <b>{t}</b>
+      <div className="opt-list">
+        {opts.map(([t, i, fn]) => (
+          <button key={t} type="button" className="opt-item" onClick={fn}>
+            <span className="opt-ic"><Icon name={i} /></span>
+            <span>{t}</span>
+            <Icon name="chev" className="chev" />
           </button>
         ))}
       </div>
-    </Sheet>
-  );
-}
-
-function PhotoPicker({ blob, setBlob }: { blob: Blob | null; setBlob: (b: Blob | null) => void }) {
-  const preview = useMemo(() => (blob ? URL.createObjectURL(blob) : ''), [blob]);
-  const [err, setErr] = useState('');
-  return (
-    <div className="photo-pick">
-      {preview && <img src={preview} alt="Valgt billede" />}
-      <div className="tags">
-        <span className="btn btn-outline btn-sm file-btn"><Icon name="camera" />{blob ? 'Skift billede' : 'Tilføj billede'}
-          <input type="file" accept="image/*" aria-label="Vælg billede" onChange={async (e) => {
-            const f = e.target.files?.[0]; if (!f) return;
-            try { setErr(''); setBlob(await compressImage(f)); } catch { setErr('Billedet kunne ikke læses'); }
-          }} />
-        </span>
-        {blob && <button type="button" className="btn btn-quiet btn-sm" onClick={() => setBlob(null)}>Fjern</button>}
-      </div>
-      {err && <p className="form-err">{err}</p>}
-    </div>
-  );
-}
-
-function EventSelect({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
-  const { events, myRsvps } = useApp();
-  const near = events.filter((e) => Math.abs((dateOf(e.date)?.getTime() || 0) - Date.now()) < 10 * 864e5 && (myRsvps.has(e.id) || !isPast(e))).slice(0, 25);
-  return (
-    <div className="field"><label htmlFor="f-ev">{label}</label>
-      <select id="f-ev" value={value} onChange={(e) => onChange(e.target.value)}>
-        <option value="">Intet event</option>
-        {near.map((e) => <option key={e.id} value={e.id}>{e.title} · {relDay(e)}{e.time ? ' ' + e.time : ''}</option>)}
-      </select>
-    </div>
-  );
-}
-
-function WorkoutForm({ eventId }: { eventId?: string }) {
-  const { api, me, closeSheet, openSheet, toast, eventById } = useApp();
-  const ev0 = eventById(eventId);
-  const [sport, setSport] = useState<Sport>(ev0 && ev0.sport !== 'socialt' ? ev0.sport : 'lob');
-  const [title, setTitle] = useState('');
-  const [km, setKm] = useState('');
-  const [dur, setDur] = useState('');
-  const [reps, setReps] = useState<{ id: string; name: string; count: string }[]>(() =>
-    ev0 && sportMetric(ev0.sport) === 'reps' ? (ev0.exercises.length ? ev0.exercises.map((x) => ({ id: newId('r'), name: x.name, count: '' })) : SPORTS[ev0.sport].tpl.map(([name]) => ({ id: newId('r'), name, count: '' }))) : []);
-  const [text, setText] = useState('');
-  const [photo, setPhoto] = useState<Blob | null>(null);
-  const [evId, setEvId] = useState(eventId || '');
-  const [err, setErr] = useState('');
-  const [busy, setBusy] = useState(false);
-  const metric = sportMetric(sport);
-  const pick = (s: Sport) => {
-    setSport(s);
-    if (sportMetric(s) === 'reps' && !reps.length) setReps(SPORTS[s].tpl.map(([name]) => ({ id: newId('r'), name, count: '' })));
-  };
-  const placeholder = { lob: 'Aftenløb', cykling: 'Cykeltur', gang: 'Gåtur', calisthenics: 'Calisthenics i parken', fitness: 'Fitness udenfor', yoga: 'Yoga i det fri', vinterbadning: 'Morgendukkert', socialt: 'Hygge', andet: 'Træning' }[sport];
-
-  const save = async () => {
-    if (!me) return;
-    const distanceKm = metric === 'distance' ? parseNumber(km) : null;
-    const durationSec = dur.trim() ? parseDuration(dur) : null;
-    if (dur.trim() && durationSec === null) { setErr('Skriv tiden som 42:10'); return; }
-    if (metric === 'distance' && (!distanceKm || distanceKm <= 0)) { setErr('Mangler distance'); return; }
-    if (distanceKm && distanceKm > 1000) { setErr('Distancen er for lang'); return; }
-    if (durationSec && durationSec > 48 * 3600) { setErr('Tiden er for lang'); return; }
-    const lines: RepLine[] = metric === 'reps' ? reps.map((r) => ({ name: r.name.trim().slice(0, 40), count: Math.min(99999, parseNumber(r.count) || 0) })).filter((r) => r.name && r.count > 0).slice(0, 10) : [];
-    if (metric === 'reps' && !lines.length && !durationSec) { setErr('Tilføj mindst én øvelse'); return; }
-    setBusy(true); setErr('');
-    try {
-      const photoURL = photo ? await api.uploadImage(me.id, 'activity', photo) : undefined;
-      const id = await api.createActivity(me.id, {
-        kind: 'workout', sport, title: (title.trim() || placeholder).slice(0, 80), text: text.trim().slice(0, 1000) || undefined,
-        distanceKm: distanceKm || undefined, durationSec: durationSec || undefined, reps: lines.length ? lines : undefined,
-        eventId: evId || undefined, photoURL,
-      });
-      toast('Delt');
-      openSheet({ type: 'share-activity', activity: { id, uid: me.id, kind: 'workout', sport, title: title.trim() || placeholder, distanceKm: distanceKm || undefined, durationSec: durationSec || undefined, reps: lines, createdAt: Date.now(), kudos: 0, comments: 0 } as Activity });
-    } catch { setErr('Ikke delt. Prøv igen.'); setBusy(false); }
-  };
-
-  return (
-    <Sheet title="Del træning" onClose={closeSheet}
-      foot={<><button className="btn btn-outline" onClick={closeSheet}>Annullér</button><button className="btn btn-primary btn-grow" disabled={busy} onClick={save}>Del træning</button></>}>
-      <form className="form" onSubmit={(e) => { e.preventDefault(); save(); }}>
-        <fieldset><legend>Sport</legend>
-          <div className="choices">{WORKOUT_SPORTS.map((s) => <button type="button" key={s} className="choice" aria-pressed={sport === s} onClick={() => pick(s)}>{sportLabel(s)}</button>)}</div>
-        </fieldset>
-        <div className="field"><label htmlFor="w-title">Titel</label><input id="w-title" maxLength={80} value={title} placeholder={placeholder} onChange={(e) => setTitle(e.target.value)} /></div>
-        {metric === 'distance' && (
-          <div className="row2">
-            <div className="field"><label htmlFor="w-km">Distance (km)</label><input id="w-km" inputMode="decimal" value={km} placeholder="8,2" onChange={(e) => setKm(e.target.value)} /></div>
-            <div className="field"><label htmlFor="w-dur">Tid</label><input id="w-dur" inputMode="numeric" value={dur} placeholder="42:10" onChange={(e) => setDur(e.target.value)} /></div>
-          </div>
-        )}
-        {metric === 'reps' && (
-          <fieldset><legend>Øvelser</legend>
-            {reps.map((r) => (
-              <div className="rep-row" key={r.id}>
-                <input id={`rn-${r.id}`} aria-label="Øvelse" placeholder="Øvelse" maxLength={40} value={r.name} onChange={(e) => setReps((x) => x.map((y) => (y.id === r.id ? { ...y, name: e.target.value } : y)))} />
-                <input id={`rc-${r.id}`} aria-label="Antal" placeholder="Antal" inputMode="numeric" value={r.count} onChange={(e) => setReps((x) => x.map((y) => (y.id === r.id ? { ...y, count: e.target.value } : y)))} />
-                <button type="button" className="icon-btn ex-del" aria-label="Fjern øvelse" onClick={() => setReps((x) => x.filter((y) => y.id !== r.id))}><Icon name="close" /></button>
-              </div>
-            ))}
-            {reps.length < 10 && <button type="button" className="btn btn-outline btn-sm" onClick={() => setReps((x) => [...x, { id: newId('r'), name: '', count: '' }])}><Icon name="plus" />Tilføj øvelse</button>}
-          </fieldset>
-        )}
-        {metric !== 'distance' && (
-          <div className="field"><label htmlFor="w-dur2">Varighed</label><input id="w-dur2" inputMode="numeric" value={dur} placeholder="45:00" onChange={(e) => setDur(e.target.value)} /></div>
-        )}
-        <div className="field"><label htmlFor="w-text">Hvordan gik det?</label><textarea id="w-text" rows={2} maxLength={1000} value={text} onChange={(e) => setText(e.target.value)} /></div>
-        <PhotoPicker blob={photo} setBlob={setPhoto} />
-        <EventSelect value={evId} onChange={setEvId} label="Event" />
-        <p className="form-err" role="alert">{err}</p>
-      </form>
     </Sheet>
   );
 }
@@ -347,6 +233,11 @@ function ShareSheet({ title, kind, make, parts, link }: ShareProps) {
     if (r === 'failed') toast('Kunne ikke dele');
     if (r === 'shared') closeSheet();
   };
+  const save = () => {
+    if (!ready) return;
+    if (DEMO) { toast('Gemt'); return; }
+    if (saveImage(ready.blob, filename) === 'failed') toast('Kunne ikke gemme');
+  };
   const copy = async () => {
     if (!ready) return;
     if (DEMO || await copyImage(ready.blob)) toast('Sticker kopieret');
@@ -363,54 +254,39 @@ function ShareSheet({ title, kind, make, parts, link }: ShareProps) {
     : STORY_BGS.map((b) => ({ key: b.key, label: b.label, css: b.pal.bg, on: look.bg === b.key, set: () => update({ bg: b.key }) }));
 
   return (
-    <Sheet title={title} onClose={closeSheet}>
+    <Sheet title={title} onClose={closeSheet} foot={
+      <div className="share-targets">
+        <button type="button" className="target main" onClick={share} disabled={!ready}><span><Icon name="share" /></span>Del</button>
+        <button type="button" className="target" onClick={save} disabled={!ready}><span><Icon name="download" /></span>Gem</button>
+        {clear && (DEMO || canCopyImage()) && <button type="button" className="target" onClick={copy} disabled={!ready}><span><Icon name="copy" /></span>Kopiér</button>}
+        <button type="button" className="target" onClick={sendLink}><span><Icon name="link" /></span>Link</button>
+      </div>
+    }>
       <div className="seg" role="tablist" aria-label="Vælg billede">
         <button role="tab" aria-selected={!clear} onClick={() => pick('story')}>Story</button>
-        <button role="tab" aria-selected={clear} onClick={() => pick('clear')}>Gennemsigtig</button>
+        <button role="tab" aria-selected={clear} onClick={() => pick('clear')}>Sticker</button>
       </div>
       <figure className="story-preview">
         <div className={'story-frame' + (clear ? ' clear' : '') + (clear && (ready ? ready.key.startsWith('clear|black') : look.color === 'black') ? ' light' : '')}>
           {ready
-            ? <img src={ready.url} alt={clear ? 'Gennemsigtig sticker' : 'Story-billede'} />
+            ? <img src={ready.url} alt={clear ? 'Sticker' : 'Story-billede'} />
             : <div className="story-wait">{failed ? 'Billedet kunne ikke laves' : 'Laver billede …'}</div>}
         </div>
       </figure>
       <div className="share-opts">
-        <div className="opt-row">
-          <span className="opt-label" id="opt-color">{clear ? 'Farve' : 'Baggrund'}</span>
-          <div className="swatches" role="radiogroup" aria-labelledby="opt-color">
-            {swatches.map((w) => (
-              <button key={w.key} type="button" role="radio" aria-checked={w.on} aria-label={w.label} title={w.label}
-                className="swatch" style={{ background: w.css }} onClick={w.set} />
-            ))}
-          </div>
+        <div className="swatches" role="radiogroup" aria-label={clear ? 'Farve' : 'Baggrund'}>
+          {swatches.map((w) => (
+            <button key={w.key} type="button" role="radio" aria-checked={w.on} aria-label={w.label} title={w.label}
+              className="swatch" style={{ background: w.css }} onClick={w.set} />
+          ))}
         </div>
         {clear && (
-          <div className="opt-row top">
-            <span className="opt-label">Vis</span>
-            <div className="choices sm">
-              {parts.map((p) => (
-                <button key={p.key} type="button" className="choice" aria-pressed={!look.hide.includes(p.key)} onClick={() => toggle(p.key)}>{p.label}</button>
-              ))}
-            </div>
+          <div className="choices sm" role="group" aria-label="Vis">
+            {parts.map((p) => (
+              <button key={p.key} type="button" className="choice" aria-pressed={!look.hide.includes(p.key)} onClick={() => toggle(p.key)}>{p.label}</button>
+            ))}
           </div>
         )}
-      </div>
-      <div className="actions-grid">
-        <button className="action-tile" onClick={share} disabled={!ready}>
-          <span className="ic-big"><Icon name={clear ? 'sticker' : 'insta'} /></span>
-          <b>{clear ? 'Del sticker' : 'Del story'}</b>
-        </button>
-        {clear && (DEMO || canCopyImage()) && (
-          <button className="action-tile" onClick={copy} disabled={!ready}>
-            <span className="ic-big"><Icon name="copy" /></span>
-            <b>Kopiér sticker</b>
-          </button>
-        )}
-        <button className="action-tile" onClick={sendLink}>
-          <span className="ic-big"><Icon name="link" /></span>
-          <b>Send link</b>
-        </button>
       </div>
     </Sheet>
   );

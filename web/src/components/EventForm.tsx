@@ -9,15 +9,12 @@ import { compressImage } from '../lib/image';
 import { placeText } from '../lib/address';
 import { reducedMotion } from '../lib/platform';
 import { Sheet } from './Sheet';
-import { Icon, type IconName } from './Icon';
+import { Icon, SPORT_ICON } from './Icon';
 import { Avatar, Switch } from './bits';
 import { EventSlot } from './EventCards';
 import { PlacePicker } from './Weather';
 import { TimeWheel } from './TimeWheel';
 
-const SPORT_ICON: Record<Sport, IconName> = {
-  calisthenics: 'bar', fitness: 'dumbbell', lob: 'shoe', cykling: 'bike', gang: 'walk', yoga: 'lotus', vinterbadning: 'wave', socialt: 'pizza', andet: 'star',
-};
 const STEPS = ['Hvad og hvornår', 'Sted og program', 'Hvem kan komme'] as const;
 type Step = 0 | 1 | 2;
 type TimeMode = 'allday' | 'time';

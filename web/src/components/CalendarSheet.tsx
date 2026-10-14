@@ -55,22 +55,18 @@ export function CalendarSheet() {
         <button role="radio" aria-checked={scope === 'all'} onClick={() => setScope('all')}>Alle</button>
       </div>
       {err && <p className="form-err">{err}</p>}
-      <div className="actions-grid" style={{ marginTop: 14 }}>
-        <a className={'action-tile' + (url ? '' : ' is-busy')} href={webcal || undefined} aria-disabled={!url} onClick={demoOnly}>
-          <span className="ic-big"><Icon name="calplus" /></span>
-          <span><b>iPhone og Mac</b></span>
+      <div className="opt-list" style={{ marginTop: 14 }}>
+        <a className="opt-item" href={webcal || undefined} aria-disabled={!url} onClick={demoOnly}>
+          <span className="opt-ic"><Icon name="calplus" /></span><span>iPhone og Mac</span><Icon name="chev" className="chev" />
         </a>
-        <a className={'action-tile' + (url ? '' : ' is-busy')} href={google || undefined} target="_blank" rel="noopener noreferrer" aria-disabled={!url} onClick={demoOnly}>
-          <span className="ic-big"><Icon name="cal" /></span>
-          <span><b>Google Kalender</b></span>
+        <a className="opt-item" href={google || undefined} target="_blank" rel="noopener noreferrer" aria-disabled={!url} onClick={demoOnly}>
+          <span className="opt-ic"><Icon name="cal" /></span><span>Google Kalender</span><Icon name="chev" className="chev" />
         </a>
-        <a className={'action-tile' + (url ? '' : ' is-busy')} href={outlook || undefined} target="_blank" rel="noopener noreferrer" aria-disabled={!url} onClick={demoOnly}>
-          <span className="ic-big"><Icon name="cal" /></span>
-          <span><b>Outlook</b></span>
+        <a className="opt-item" href={outlook || undefined} target="_blank" rel="noopener noreferrer" aria-disabled={!url} onClick={demoOnly}>
+          <span className="opt-ic"><Icon name="cal" /></span><span>Outlook</span><Icon name="chev" className="chev" />
         </a>
-        <button className="action-tile" onClick={copy} disabled={!url}>
-          <span className="ic-big"><Icon name="link" /></span>
-          <span><b>Kopiér link</b></span>
+        <button type="button" className="opt-item" onClick={copy} disabled={!url}>
+          <span className="opt-ic"><Icon name="link" /></span><span>Kopiér link</span><Icon name="copy" className="chev" />
         </button>
       </div>
       {url && <p className="cal-url" aria-label="Dit kalenderlink">{url}</p>}

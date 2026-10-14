@@ -108,20 +108,16 @@ export function SignupPanel({ ev, onPeople }: { ev: EventDoc; onPeople: () => vo
       {ev.cancelled ? (
         <button className="su-big" disabled><Icon name="ban" />Aflyst</button>
       ) : p.state === 'going' ? (
-        <>
-          <div className="su-big su-big-on" role="status"><span className="su-tick"><Icon name="check" /></span>Du er tilmeldt</div>
-          <div className="su-more">
-            <button type="button" className="link" onClick={toCalendar}><Icon name="calplus" />Læg i kalenderen</button>
-            <button type="button" className={'link' + (armed ? ' danger' : '')} onClick={leave}>{armed ? 'Afmeld?' : 'Afmeld'}</button>
-          </div>
-        </>
+        <div className="su-status">
+          <span className="su-state" role="status"><span className="su-tick"><Icon name="check" /></span>Du er tilmeldt</span>
+          <button type="button" className="icon-btn su-icon" onClick={toCalendar} aria-label="Læg i kalenderen"><Icon name="calplus" /></button>
+          <button type="button" className={'btn btn-outline btn-sm' + (armed ? ' danger' : '')} onClick={leave}>{armed ? 'Afmeld?' : 'Afmeld'}</button>
+        </div>
       ) : p.state === 'waiting' ? (
-        <>
-          <div className="su-big su-big-wait" role="status"><Icon name="clock" />Nr. {p.pos} på venteliste</div>
-          <div className="su-more">
-            <button type="button" className={'link' + (armed ? ' danger' : '')} onClick={leave}>{armed ? 'Forlad?' : 'Forlad venteliste'}</button>
-          </div>
-        </>
+        <div className="su-status">
+          <span className="su-state wait" role="status"><Icon name="clock" />Nr. {p.pos} på venteliste</span>
+          <button type="button" className={'btn btn-outline btn-sm' + (armed ? ' danger' : '')} onClick={leave}>{armed ? 'Forlad?' : 'Forlad'}</button>
+        </div>
       ) : closed ? (
         <button className="su-big" disabled>Lukket</button>
       ) : (

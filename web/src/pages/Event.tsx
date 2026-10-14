@@ -59,9 +59,8 @@ export function EventPage() {
       pending.current = null;
       api.setProgress(ev.id, me.id, next, done).catch(() => toast('Reps ikke gemt'));
     }, 600);
-    if (v > 0 && !myRsvps.has(ev.id) && !isPast(ev) && !signupClosed(ev) && !ev.cancelled) api.setRsvp(ev.id, me.id, true).catch(() => undefined);
     if (v > 0 && !checkedIn && checkinOpen(ev)) api.setCheckin(ev.id, me.id, me.id, true).catch(() => undefined);
-  }, [api, ev, me, mine, myRsvps, toast, celebrate, checkedIn]);
+  }, [api, ev, me, mine, toast, celebrate, checkedIn]);
 
   if (!ev) {
     return (
@@ -89,7 +88,8 @@ export function EventPage() {
   const all = photos || [];
   const viewList = viewer ? (viewer.which === 'cover' ? cover : all) : [];
   const hasProgram = ev.exercises.length > 0;
-  const tab: Sub = !hasProgram && sub === 'team' ? 'program' : sub;
+  const joined = checkedIn || place.state === 'going';
+  const tab: Sub = (!hasProgram || !joined) && sub === 'team' ? 'program' : sub;
 
   return (
     <>
@@ -134,20 +134,20 @@ export function EventPage() {
       {showSummary && <FeedbackSummary ev={ev} />}
       <div className="seg sticky" role="tablist" aria-label="Visning">
         <button role="tab" aria-selected={tab === 'program'} onClick={() => setSub('program')}>{hasProgram ? 'Program' : 'Om eventet'}</button>
-        {hasProgram && <button role="tab" aria-selected={tab === 'team'} onClick={() => setSub('team')}>Holdet</button>}
+        {hasProgram && joined && <button role="tab" aria-selected={tab === 'team'} onClick={() => setSub('team')}>Holdet</button>}
         <button role="tab" aria-selected={tab === 'people'} onClick={() => setSub('people')}>Deltagere <span className="seg-n">{attendees.length}</span></button>
         <button role="tab" aria-selected={tab === 'photos'} onClick={() => setSub('photos')}>Billeder <span className="seg-n">{photos ? photos.length : ev.photoCount}</span></button>
       </div>
       <section role="tabpanel">
-        {tab === 'program' && <ProgramTab ev={ev} mine={mine} setCount={setCount} canEdit={canEdit} />}
+        {tab === 'program' && <ProgramTab ev={ev} mine={mine} setCount={setCount} canEdit={canEdit} canLog={joined && !ev.cancelled} />}
         {tab === 'team' && <TeamTab ev={ev} progress={progress} attendees={attendees} mine={mine} />}
-        {tab === 'people' && <PeopleTab ev={ev} attendees={attendees} waitlist={place.waitlist} checkins={checkins} canMark={canEdit && countsAsTraining(ev) && !ev.cancelled && Date.now() >= (windowOf(ev)?.from ?? Infinity)} />}
+        {tab === 'people' && <PeopleTab ev={ev} attendees={attendees} waitlist={place.waitlist} checkins={checkins} canMark={canEdit && joined && countsAsTraining(ev) && !ev.cancelled && Date.now() >= (windowOf(ev)?.from ?? Infinity)} />}
         {tab === 'photos' && <PhotosTab ev={ev} photos={photos} canAdd={!!me && (ev.photoPolicy === 'all' || canEdit)} asHost={canEdit} onOpen={(i) => setViewer({ which: 'all', index: i })} />}
       </section>
       <div className="share-row">
         {(past || started) && !ev.cancelled && <button className="btn btn-primary btn-sm" onClick={() => openSheet({ type: 'share-recap', event: ev })}><Icon name="story" />Recap</button>}
         <button className="btn btn-outline btn-sm" onClick={() => openSheet({ type: 'share-event', event: ev })}><Icon name="share" />Del</button>
-        {!past && !ev.cancelled && <button className="btn btn-outline btn-sm" onClick={() => openSheet({ type: 'workout', eventId: ev.id })}><Icon name="trophy" />Del træning</button>}
+        {!past && !ev.cancelled && joined && <button className="btn btn-outline btn-sm" onClick={() => openSheet({ type: 'workout', eventId: ev.id })}><Icon name="trophy" />Del træning</button>}
       </div>
       {!ev.cancelled && <CalendarLinks ev={ev} />}
       {viewer && viewList.length > 0 && <PhotoViewer ev={ev} list={viewList} start={Math.min(viewer.index, viewList.length - 1)} canModerate={canEdit} onClose={() => setViewer(null)} />}
@@ -265,7 +265,7 @@ function PhotoViewer({ ev, list, start, canModerate, onClose }: { ev: EventDoc; 
   );
 }
 
-function ProgramTab({ ev, mine, setCount, canEdit }: { ev: EventDoc; mine: Record<string, number> | null; setCount: (x: string, v: number) => void; canEdit: boolean }) {
+function ProgramTab({ ev, mine, setCount, canEdit, canLog }: { ev: EventDoc; mine: Record<string, number> | null; setCount: (x: string, v: number) => void; canEdit: boolean; canLog: boolean }) {
   const { openSheet } = useApp();
   if (!ev.exercises.length) {
     return (
@@ -273,6 +273,16 @@ function ProgramTab({ ev, mine, setCount, canEdit }: { ev: EventDoc; mine: Recor
         <p>Intet program</p>
         {canEdit && ev.sport !== 'socialt' && <button className="btn btn-primary" onClick={() => openSheet({ type: 'event', event: ev })}><Icon name="plus" />Læg program ind</button>}
       </div>
+    );
+  }
+  if (!canLog) {
+    return (
+      <>
+        <ul className="prog-list">
+          {ev.exercises.map((x) => <li key={x.id}><b>{x.name}</b><span>{fmt(x.target)}<small>{x.unit}</small></span></li>)}
+        </ul>
+        {canEdit && <p style={{ marginTop: 12 }}><button className="btn btn-quiet btn-wide" onClick={() => openSheet({ type: 'event', event: ev })}><Icon name="edit" />Rediger program</button></p>}
+      </>
     );
   }
   if (!mine) return <Skeleton />;

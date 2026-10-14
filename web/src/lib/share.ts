@@ -599,13 +599,7 @@ export async function copyImage(blob: Blob): Promise<boolean> {
 
 export type ShareResult = 'shared' | 'downloaded' | 'copied' | 'cancelled' | 'failed';
 
-export async function shareImage(blob: Blob, filename: string, text: string): Promise<ShareResult> {
-  const file = new File([blob], filename, { type: 'image/png' });
-  const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
-  if (nav.share && nav.canShare?.({ files: [file] })) {
-    try { await nav.share({ files: [file], text }); return 'shared'; }
-    catch (e) { if ((e as Error).name === 'AbortError') return 'cancelled'; }
-  }
+export function saveImage(blob: Blob, filename: string): ShareResult {
   try {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = filename;
@@ -613,6 +607,16 @@ export async function shareImage(blob: Blob, filename: string, text: string): Pr
     setTimeout(() => URL.revokeObjectURL(url), 5000);
     return 'downloaded';
   } catch { return 'failed'; }
+}
+
+export async function shareImage(blob: Blob, filename: string, text: string): Promise<ShareResult> {
+  const file = new File([blob], filename, { type: 'image/png' });
+  const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
+  if (nav.share && nav.canShare?.({ files: [file] })) {
+    try { await nav.share({ files: [file], text }); return 'shared'; }
+    catch (e) { if ((e as Error).name === 'AbortError') return 'cancelled'; }
+  }
+  return saveImage(blob, filename);
 }
 
 export async function shareLink(url: string, title: string, text: string): Promise<ShareResult> {
